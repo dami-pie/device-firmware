@@ -1,113 +1,125 @@
-#include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <ESP8266WiFi.h>
-#include <WebSocketsClient.h>
-#include <SocketIoClient.h>
-#define SERVER_ADRESS "192.168.15.31"
-#define SERVER_URL "http://192.168.15.31:3030"
-#define LOGIN_PATH SERVER_URL "/login"
+#define LGFX_AUTODETECT // Autodetect board
+#define LGFX_USE_V1     // set to use new version of library
 
-SocketIoClient webSocket;
-WiFiClient client;
-HTTPClient http;
-String full_login = LOGIN_PATH "?mac=";
-String login_code;
+/* Uncomment below line to draw on screen with touch */
+// #define DRAW_ON_SCREEN
 
-void open_event(const char *payload, size_t length)
+#include <LovyanGFX.hpp> // main library
+static LGFX lcd;         // declare display variable
+
+#include "ui.h"
+#include <lvgl.h>
+#include "lv_conf.h"
+#include <WiFi.h>
+#include "time.h"
+
+#define SSID "Silvia Home"
+#define PASS "6FEtxH20:32@"
+
+#define NTP_Server "pool.ntp.br"
+const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
+const int daylightOffset_sec = 0;
+
+/*** Setup screen resolution for LVGL ***/
+static const uint16_t screenWidth = 480, screenHeight = 320;
+
+/*** Setup screen buffer for LVGL ***/
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf[screenWidth * 10];
+
+/*** Display callback to flush the buffer to screen ***/
+void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-  // open the dor
-  // await close
-  // buzz if don't close it
-  // sleep if is allred closed
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(5000);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  webSocket.disconnect();
-  ESP.deepSleepMax();
+  uint32_t width = (area->x2 - area->x1 + 1), height = (area->y2 - area->y1 + 1);
+
+  lcd.startWrite();
+  lcd.setAddrWindow(area->x1, area->y1, width, height);
+  lcd.writePixels((lgfx::rgb565_t *)&color_p->full, width * height);
+  lcd.endWrite();
+
+  lv_disp_flush_ready(disp);
 }
 
-void on_disconnect(const char *payload, size_t length)
+/*** Touchpad callback to read the touchpad ***/
+void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  ESP.deepSleepMax();
+  uint16_t touchX, touchY;
+  bool touched = lcd.getTouch(&touchX, &touchY);
+  data->state = (!touched ? LV_INDEV_STATE_REL : LV_INDEV_STATE_PR);
+  if (touched)
+    data->point.x = touchX, data->point.y = touchY; /*Set the coordinates*/
 }
 
-void setupWifi()
+void getLocalTime()
 {
-  WiFi.begin("GVT-8D59", "arer3366547");
+  struct tm timeinfo;
+  char hourMin[6];
+  if (!getLocalTime(&timeinfo))
+  {
+    lv_label_set_text(ui_TimeLabel, "--:--");
+    return;
+  }
+  // Serial.println(&timeinfo, "%R");
+  strftime(hourMin, 6, "%R", &timeinfo);
+  lv_label_set_text(ui_TimeLabel, hourMin);
+  // lv_label_set_text(ui_TimeLabel2, hourMin);
+  // lv_label_set_text(ui_TimeLabel3, hourMin);
+}
 
-  Serial.print("[WiFi]: Connecting");
+void setup(void)
+{
+
+  Serial.begin(115200); /* prepare for possible serial debug */
+
+  WiFi.begin(SSID, PASS);
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(500);
-    Serial.print(".");
+    delay(150);
   }
-  Serial.println();
+  configTime(gmtOffset_sec, daylightOffset_sec, NTP_Server);
 
-  Serial.print("[WiFi]: Connected, IP address: ");
-  Serial.println(WiFi.localIP());
+  /*------------------- LCD CONFIG --------------------
+   1. Initialize LovyanGFX
+   2. Setting display Orientation and Brightness
+  ----------------------------------------------------*/
+  lcd.init();
+  lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
+  lcd.setBrightness(200);
 
-  full_login += WiFi.macAddress();
-}
+  /*------------------- LVGL CONFIG --------------------
+   1. Initialize LVGL
+   2. LVGL : Setting up buffer to use for display
+   3. LVGL : Setup & Initialize the display device driver
+   4. Change the following line to your display resolution
+   5. LVGL : Setup & Initialize the input device driver
+   ----------------------------------------------------*/
+  lv_init();
+  lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
 
-String login()
-{
-  // server preconnect
-  client.connect(SERVER_URL, 3030);
-  Serial.println("[HTTP]: Logando... ");
+  static lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv);
+  disp_drv.hor_res = screenWidth,
+  disp_drv.ver_res = screenHeight,
+  disp_drv.flush_cb = display_flush,
+  disp_drv.draw_buf = &draw_buf,
+  lv_disp_drv_register(&disp_drv);
 
-  bool http_sucess_connection = http.begin(client, full_login);
-  if (http_sucess_connection)
-  {
-    Serial.println("[HTTP]: Esperando resposta...");
-    int http_status = http.GET();
-    String http_response = "";
-    if (http_status != -1 && http_status == 200)
-    {
-      http_response = http.getString();
-      Serial.println("[HTTP Response]: \"" + http_response + "\"");
-      webSocket.begin("192.168.15.31", 3030);
-    }
-    else
-    {
-      Serial.print("[HTTP Error]: ");
-      Serial.print(http_status);
-    }
-    http.end();
-    return http_response;
-  }
-  else
-  {
-    Serial.println("[HTTP]: Falha de conexão...");
-    return "";
-  }
-}
+  static lv_indev_drv_t indev_drv;
+  lv_indev_drv_init(&indev_drv);
+  indev_drv = {
+      .type = LV_INDEV_TYPE_POINTER,
+      .read_cb = touchpad_read,
+  };
+  lv_indev_drv_register(&indev_drv);
 
-void setup()
-{
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
-  pinMode(LED_BUILTIN, OUTPUT);
-  delay(3000);
-  setupWifi();
-  String login_response = login();
-  if (login_response.length())
-  {
-    webSocket.on(login_response.c_str(), open_event);
-    webSocket.on("disconnect", on_disconnect);
-  }
-  else
-  {
-    ESP.deepSleepMax();
-  }
+  ui_init();
 }
 
 void loop()
 {
-  webSocket.loop();
-  delay(100);
+  lv_label_set_text(ui_WifiLabel,
+                    (WiFi.status() != WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE));
+  // getLocalTime();
+  lv_timer_handler(); /* let the GUI do its work */
+  delay(5);
 }
