@@ -1,31 +1,30 @@
 #define LGFX_AUTODETECT // Autodetect board
 #define LGFX_USE_V1     // set to use new version of library
 
-/* Uncomment below line to draw on screen with touch */
-// #define DRAW_ON_SCREEN
+#include "ui.h"
+
+#include "lv_conf.h"
+#include <lvgl.h>
 
 #include <LovyanGFX.hpp> // main library
-static LGFX lcd;         // declare display variable
 
-#include "ui.h"
-#include <lvgl.h>
-#include "lv_conf.h"
 #include <WiFi.h>
-#include "time.h"
 
-#define SSID "Silvia Home"
-#define PASS "6FEtxH20:32@"
+#include <time.h>
+
+static LGFX lcd; // declare display variable
 
 #define NTP_Server "pool.ntp.br"
 const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
 const int daylightOffset_sec = 0;
 
-/*** Setup screen resolution for LVGL ***/
+/* Define screen resolution for LVGL */
 static const uint16_t screenWidth = 480, screenHeight = 320;
 
-/*** Setup screen buffer for LVGL ***/
+/* Define screen buffer for LVGL */
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[screenWidth * 10];
+static lv_color_t buf[screenWidth * 15];
+static lv_color_t buf2[screenWidth * 15];
 
 /*** Display callback to flush the buffer to screen ***/
 void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -54,24 +53,31 @@ void getLocalTime()
 {
   struct tm timeinfo;
   char hourMin[6];
+  char date[14];
   if (!getLocalTime(&timeinfo))
   {
-    lv_label_set_text(ui_TimeLabel, "--:--");
+    lv_label_set_text(ui_TimeLabel1, "--:--");
     return;
   }
-  // Serial.println(&timeinfo, "%R");
+  Serial.println(&timeinfo, "%R");
+  strftime(date, 16, "%d %m %Y", &timeinfo);
   strftime(hourMin, 6, "%R", &timeinfo);
-  lv_label_set_text(ui_TimeLabel, hourMin);
-  // lv_label_set_text(ui_TimeLabel2, hourMin);
-  // lv_label_set_text(ui_TimeLabel3, hourMin);
+  lv_label_set_text(ui_TimeLabel1, hourMin);
+  lv_label_set_text(ui_DateLabel1, date);
+  lv_label_set_text(ui_TimeLabel2, hourMin);
+  lv_label_set_text(ui_DateLabel2, date);
+  lv_label_set_text(ui_TimeLabel3, hourMin);
+  lv_label_set_text(ui_DateLabel3, date);
+  lv_label_set_text(ui_TimeLabel4, hourMin);
+  lv_label_set_text(ui_DateLabel4, date);
 }
 
 void setup(void)
 {
 
-  Serial.begin(115200); /* prepare for possible serial debug */
+  // Serial.begin(115200); /* prepare for possible serial debug */
 
-  WiFi.begin(SSID, PASS);
+  WiFi.begin("Silvia Home", "6FEtxH20:32@");
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(150);
@@ -84,7 +90,7 @@ void setup(void)
   ----------------------------------------------------*/
   lcd.init();
   lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
-  lcd.setBrightness(200);
+  lcd.setBrightness(255);
 
   /*------------------- LVGL CONFIG --------------------
    1. Initialize LVGL
@@ -94,14 +100,14 @@ void setup(void)
    5. LVGL : Setup & Initialize the input device driver
    ----------------------------------------------------*/
   lv_init();
-  lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
+  lv_disp_draw_buf_init(&draw_buf, buf, buf2, screenWidth * 15);
 
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
-  disp_drv.hor_res = screenWidth,
-  disp_drv.ver_res = screenHeight,
-  disp_drv.flush_cb = display_flush,
   disp_drv.draw_buf = &draw_buf,
+  disp_drv.flush_cb = display_flush,
+  disp_drv.hor_res = screenWidth,
+  disp_drv.ver_res = screenHeight;
   lv_disp_drv_register(&disp_drv);
 
   static lv_indev_drv_t indev_drv;
@@ -118,8 +124,8 @@ void setup(void)
 void loop()
 {
   lv_label_set_text(ui_WifiLabel,
-                    (WiFi.status() != WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE));
-  // getLocalTime();
+                    (WiFi.status() == WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE));
+  getLocalTime();
   lv_timer_handler(); /* let the GUI do its work */
   delay(5);
 }

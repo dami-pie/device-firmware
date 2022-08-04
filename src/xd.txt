@@ -1,0 +1,78 @@
+// void ui_UnlckDoorScreen_screen_init(void)
+// {
+
+//     // ui_UnlckDoorScreen
+
+//     ui_UnlckDoorScreen = lv_obj_create(NULL);
+
+//     lv_obj_clear_flag(ui_UnlckDoorScreen, LV_OBJ_FLAG_SCROLLABLE);
+
+//     // ui_TimeLabel4
+
+//     ui_TimeLabel4 = lv_label_create(ui_UnlckDoorScreen);
+
+//     lv_obj_set_width(ui_TimeLabel4, LV_SIZE_CONTENT);
+//     lv_obj_set_height(ui_TimeLabel4, LV_SIZE_CONTENT);
+
+//     lv_obj_set_x(ui_TimeLabel4, 10);
+//     lv_obj_set_y(ui_TimeLabel4, 15);
+
+//     lv_label_set_text(ui_TimeLabel4, "12:10");
+
+//     lv_obj_set_style_text_color(ui_TimeLabel4, lv_color_hex(0x1D4484), LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_opa(ui_TimeLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_align(ui_TimeLabel4, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_font(ui_TimeLabel4, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+//     // ui_DateLabel4
+
+//     ui_DateLabel4 = lv_label_create(ui_UnlckDoorScreen);
+
+//     lv_obj_set_width(ui_DateLabel4, LV_SIZE_CONTENT);
+//     lv_obj_set_height(ui_DateLabel4, LV_SIZE_CONTENT);
+
+//     lv_obj_set_x(ui_DateLabel4, 10);
+//     lv_obj_set_y(ui_DateLabel4, 50);
+
+//     lv_label_set_text(ui_DateLabel4, "7 de Julho 2022");
+
+//     lv_obj_set_style_text_color(ui_DateLabel4, lv_color_hex(0x1D4484), LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_opa(ui_DateLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_align(ui_DateLabel4, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+//     // ui_LogoEcomp7
+
+//     ui_LogoEcomp7 = lv_img_create(ui_UnlckDoorScreen);
+//     // lv_img_set_src(ui_LogoEcomp7, &ui_img_1455682838);
+
+//     lv_obj_set_width(ui_LogoEcomp7, LV_SIZE_CONTENT);
+//     lv_obj_set_height(ui_LogoEcomp7, LV_SIZE_CONTENT);
+
+//     lv_obj_set_x(ui_LogoEcomp7, -5);
+//     lv_obj_set_y(ui_LogoEcomp7, 5);
+
+//     lv_obj_set_align(ui_LogoEcomp7, LV_ALIGN_TOP_RIGHT);
+
+//     lv_obj_add_flag(ui_LogoEcomp7, LV_OBJ_FLAG_ADV_HITTEST);
+//     lv_obj_clear_flag(ui_LogoEcomp7, LV_OBJ_FLAG_SCROLLABLE);
+
+//     // ui_WelcomeLabel4
+
+//     ui_WelcomeLabel4 = lv_label_create(ui_UnlckDoorScreen);
+
+//     lv_obj_set_width(ui_WelcomeLabel4, LV_SIZE_CONTENT);
+//     lv_obj_set_height(ui_WelcomeLabel4, LV_SIZE_CONTENT);
+
+//     lv_obj_set_x(ui_WelcomeLabel4, 15);
+//     lv_obj_set_y(ui_WelcomeLabel4, 0);
+
+//     lv_obj_set_align(ui_WelcomeLabel4, LV_ALIGN_LEFT_MID);
+
+//     lv_label_set_text(ui_WelcomeLabel4, "Ok, a porta esta aberta, até\na proxima!");
+
+//     lv_obj_set_style_text_color(ui_WelcomeLabel4, lv_color_hex(0x1D4484), LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_opa(ui_WelcomeLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_align(ui_WelcomeLabel4, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_font(ui_WelcomeLabel4, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+// }

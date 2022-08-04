@@ -1,8 +1,8 @@
 {
-  "files.associations": {
-    ".sequelizerc": "javascript",
-    ".stylelintrc": "json",
-    ".prettierrc": "json",
-    "functional": "cpp"
-  }
+    "files.associations": {
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "string.h": "c"
+    }
 }
