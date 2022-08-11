@@ -1,5 +1,10 @@
-#ifndef _SQUARELINE_PROJECT_UI_HELPERS_H
-#define _SQUARELINE_PROJECT_UI_HELPERS_H
+// SquareLine LVGL GENERATED FILE
+// EDITOR VERSION: SquareLine Studio 1.0.5
+// LVGL VERSION: 8.2
+// PROJECT: PT3
+
+#ifndef _PT3_UI_HELPERS_H
+#define _PT3_UI_HELPERS_H
 
 #if __has_include("lvgl.h")
     #include "lvgl.h"

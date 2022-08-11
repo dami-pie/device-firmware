@@ -1,3 +1,8 @@
+// SquareLine LVGL GENERATED FILE
+// EDITOR VERSION: SquareLine Studio 1.0.5
+// LVGL VERSION: 8.2
+// PROJECT: PT3
+
 #include "ui_helpers.h"
 
 void _ui_bar_set_property(lv_obj_t * target, int id, int val)
@@ -177,3 +182,5 @@ void _ui_checked_set_text_value(lv_obj_t * trg, lv_obj_t * src, char * txt_on, c
     if(lv_obj_has_state(src, LV_STATE_CHECKED)) lv_label_set_text(trg, txt_on);
     else lv_label_set_text(trg, txt_off);
 }
+
+

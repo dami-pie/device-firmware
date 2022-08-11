@@ -1,3 +1,8 @@
+// SquareLine LVGL GENERATED FILE
+// EDITOR VERSION: SquareLine Studio 1.0.5
+// LVGL VERSION: 8.2
+// PROJECT: PT3
+
 #include "ui.h"
 
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
@@ -94,3 +99,4 @@ const lv_img_dsc_t ui_img_ecomp_r_png = {
     .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
     .data = ui_img_ecomp_r_png_data
 };
+

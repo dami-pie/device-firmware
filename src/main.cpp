@@ -5,16 +5,29 @@
 
 #include "lv_conf.h"
 #include <lvgl.h>
+#include <LovyanGFX.hpp>
 
-#include <LovyanGFX.hpp> // main library
-
+#include <Arduino.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <WebSocketsClient.h>
+#include <SocketIoClient.h>
 
 #include <time.h>
 
+#define SERVER_ADRESS "192.168.15.31"
+#define SERVER_URL "http://192.168.15.31:3030"
+#define LOGIN_PATH SERVER_URL "/login"
+
+#define NTP_SERVER "pool.ntp.br"
+
 static LGFX lcd; // declare display variable
 
-#define NTP_Server "pool.ntp.br"
+SocketIoClient webSocket;
+WiFiClient client;
+HTTPClient http;
+String full_login = LOGIN_PATH "?mac=", login_code;
+
 const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
 const int daylightOffset_sec = 0;
 
@@ -64,25 +77,102 @@ void getLocalTime()
   strftime(hourMin, 6, "%R", &timeinfo);
   lv_label_set_text(ui_TimeLabel1, hourMin);
   lv_label_set_text(ui_DateLabel1, date);
-  lv_label_set_text(ui_TimeLabel2, hourMin);
-  lv_label_set_text(ui_DateLabel2, date);
-  lv_label_set_text(ui_TimeLabel3, hourMin);
-  lv_label_set_text(ui_DateLabel3, date);
-  lv_label_set_text(ui_TimeLabel4, hourMin);
-  lv_label_set_text(ui_DateLabel4, date);
+}
+
+void open_event(const char *payload, size_t length)
+{
+  // open the dor
+  // await close
+  // buzz if don't close it
+  // sleep if is allred closed
+  // digitalWrite(LED_BUILTIN, LOW);
+  delay(5000);
+  // digitalWrite(LED_BUILTIN, HIGH);
+  delay(100);
+  webSocket.disconnect();
+  // ESP.deepSleepMax();
+}
+
+void on_disconnect(const char *payload, size_t length)
+{
+  // digitalWrite(LED_BUILTIN, HIGH);
+  delay(100);
+  // ESP.deepSleepMax();
+}
+
+void setupWifi()
+{
+  // WiFi.begin("GVT-8D59", "arer3366547");
+  WiFi.begin("Silvia Home", "6FEtxH20:32@");
+
+  Serial.print("[WiFi]: Connecting");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(150);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  Serial.print("[WiFi]: Connected, IP address: ");
+  Serial.println(WiFi.localIP());
+
+  full_login += WiFi.macAddress();
+}
+
+String login()
+{
+  // server preconnect
+  client.connect(SERVER_URL, 3030);
+  Serial.println("[HTTP]: Logando... ");
+
+  bool http_sucess_connection = http.begin(client, full_login);
+  if (http_sucess_connection)
+  {
+    Serial.println("[HTTP]: Esperando resposta...");
+    int http_status = http.GET();
+    String http_response = "";
+    if (http_status != -1 && http_status == 200)
+    {
+      http_response = http.getString();
+      Serial.println("[HTTP Response]: \"" + http_response + "\"");
+      webSocket.begin("192.168.15.31", 3030);
+    }
+    else
+    {
+      Serial.print("[HTTP Error]: ");
+      Serial.print(http_status);
+    }
+    http.end();
+    return http_response;
+  }
+  else
+  {
+    Serial.println("[HTTP]: Falha de conexão...");
+    return "";
+  }
 }
 
 void setup(void)
 {
 
-  // Serial.begin(115200); /* prepare for possible serial debug */
-
-  WiFi.begin("Silvia Home", "6FEtxH20:32@");
-  while (WiFi.status() != WL_CONNECTED)
+  Serial.begin(115200); /* prepare for possible serial debug */
+  Serial.setDebugOutput(true);
+  Serial.println();
+  // pinMode(LED_BUILTIN, OUTPUT);
+  delay(3000);
+  setupWifi();
+  String login_response = login();
+  if (login_response.length())
   {
-    delay(150);
+    webSocket.on(login_response.c_str(), open_event);
+    webSocket.on("disconnect", on_disconnect);
   }
-  configTime(gmtOffset_sec, daylightOffset_sec, NTP_Server);
+  else
+  {
+    // ESP.deepSleepMax();
+  }
+
+  configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
 
   /*------------------- LCD CONFIG --------------------
    1. Initialize LovyanGFX
@@ -123,9 +213,8 @@ void setup(void)
 
 void loop()
 {
-  lv_label_set_text(ui_WifiLabel,
-                    (WiFi.status() == WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE));
   getLocalTime();
+  webSocket.loop();
   lv_timer_handler(); /* let the GUI do its work */
   delay(5);
 }
