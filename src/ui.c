@@ -51,7 +51,7 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_set_height(ui_TimeLabel1, LV_SIZE_CONTENT);
 
     lv_obj_set_x(ui_TimeLabel1, 10);
-    lv_obj_set_y(ui_TimeLabel1, 15);
+    lv_obj_set_y(ui_TimeLabel1, 10);
 
     lv_obj_set_style_text_color(ui_TimeLabel1, lv_color_hex(C_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_TimeLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -66,7 +66,7 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_set_height(ui_DateLabel1, LV_SIZE_CONTENT);
 
     lv_obj_set_x(ui_DateLabel1, 10);
-    lv_obj_set_y(ui_DateLabel1, 50);
+    lv_obj_set_y(ui_DateLabel1, 45);
 
     lv_obj_set_style_text_color(ui_DateLabel1, lv_color_hex(C_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_DateLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -80,7 +80,7 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_set_height(ui_LoginLabel, LV_SIZE_CONTENT);
 
     lv_obj_set_x(ui_LoginLabel, 0);
-    lv_obj_set_y(ui_LoginLabel, 25);
+    lv_obj_set_y(ui_LoginLabel, 15);
 
     lv_obj_set_align(ui_LoginLabel, LV_ALIGN_TOP_MID);
 
@@ -99,7 +99,7 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_set_height(ui_EcompLogoMini1, LV_SIZE_CONTENT);
 
     lv_obj_set_x(ui_EcompLogoMini1, -10);
-    lv_obj_set_y(ui_EcompLogoMini1, 15);
+    lv_obj_set_y(ui_EcompLogoMini1, 10);
 
     lv_obj_set_align(ui_EcompLogoMini1, LV_ALIGN_TOP_RIGHT);
 
@@ -133,26 +133,20 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_set_height(ui_LabelInstructionLoginCode, LV_SIZE_CONTENT);
 
     lv_obj_set_x(ui_LabelInstructionLoginCode, 30);
-    lv_obj_set_y(ui_LabelInstructionLoginCode, -30);
+    lv_obj_set_y(ui_LabelInstructionLoginCode, -25);
 
     lv_obj_set_align(ui_LabelInstructionLoginCode, LV_ALIGN_BOTTOM_LEFT);
-
-    lv_label_set_text(ui_LabelInstructionLoginCode, "AH3C7PE");
 
     lv_obj_set_style_text_color(ui_LabelInstructionLoginCode, lv_color_hex(C_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_LabelInstructionLoginCode, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_LabelInstructionLoginCode, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    // ui_QRCodeLogin
-    /*Create a 180x180 QR code*/
-    ui_QRCodeLogin = lv_qrcode_create(ui_LoginScreen, 220, lv_color_hex(C_BLUE), lv_color_hex(C_WHITE));
+    /*ui_QRCodeLogin
+    /Create a 225x225 QR code*/
+    ui_QRCodeLogin = lv_qrcode_create(ui_LoginScreen, 225, lv_color_hex(C_BLUE), lv_color_hex(C_WHITE));
 
-    lv_obj_align(ui_QRCodeLogin, LV_ALIGN_BOTTOM_RIGHT, -10, -15);
+    lv_obj_align(ui_QRCodeLogin, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
     lv_obj_clear_flag(ui_QRCodeLogin, LV_OBJ_FLAG_SCROLLABLE);
-
-    /*Set data*/
-    const char *qrLogin = "ecomp.com.br/device/rAH3C7PE";
-    lv_qrcode_update(ui_QRCodeLogin, qrLogin, strlen(qrLogin));
 }
 
 void ui_init(void)

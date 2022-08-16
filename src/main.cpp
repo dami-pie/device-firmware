@@ -57,26 +57,50 @@ void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
   uint16_t touchX, touchY;
   bool touched = lcd.getTouch(&touchX, &touchY);
-  data->state = (!touched ? LV_INDEV_STATE_REL : LV_INDEV_STATE_PR);
-  if (touched)
-    data->point.x = touchX, data->point.y = touchY; /*Set the coordinates*/
+  if (!touched)
+  {
+    data->state = LV_INDEV_STATE_RELEASED;
+    return;
+  }
+  data->state = LV_INDEV_STATE_PRESSED;
+  data->point.x = touchX, data->point.y = touchY; /*Set the coordinates*/
+}
+
+void codeUpdate(String code)
+{
+  /*Set data*/
+  char qrLogin[50] = "ecomp.com.br/device/";
+  strcat(qrLogin, code.c_str());
+  lv_label_set_text(ui_LabelInstructionLoginCode, code.c_str());
+  lv_qrcode_update(ui_QRCodeLogin, qrLogin, strlen(qrLogin));
+}
+
+void timeUpdate(struct tm tInfo, bool update = false)
+{
+  char time[6], date[17];
+  if (!update)
+  {
+    strcat(time, "--:--");
+    strcat(date, "-- do -- de ----");
+  }
+  else
+  {
+    strftime(time, 6, "%R", &tInfo);
+    strftime(date, 17, "%d do %m de %Y", &tInfo);
+  }
+  lv_label_set_text(ui_TimeLabel1, time);
+  lv_label_set_text(ui_DateLabel1, date);
 }
 
 void getLocalTime()
 {
   struct tm timeinfo;
-  char hourMin[6];
-  char date[14];
   if (!getLocalTime(&timeinfo))
   {
-    lv_label_set_text(ui_TimeLabel1, "--:--");
+    timeUpdate(timeinfo);
     return;
   }
-  Serial.println(&timeinfo, "%R");
-  strftime(date, 16, "%d %m %Y", &timeinfo);
-  strftime(hourMin, 6, "%R", &timeinfo);
-  lv_label_set_text(ui_TimeLabel1, hourMin);
-  lv_label_set_text(ui_DateLabel1, date);
+  timeUpdate(timeinfo, 1);
 }
 
 void open_event(const char *payload, size_t length)
@@ -86,7 +110,7 @@ void open_event(const char *payload, size_t length)
   // buzz if don't close it
   // sleep if is allred closed
   // digitalWrite(LED_BUILTIN, LOW);
-  delay(5000);
+  delay(100);
   // digitalWrite(LED_BUILTIN, HIGH);
   delay(100);
   webSocket.disconnect();
@@ -174,7 +198,7 @@ void setup(void)
 
   configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
 
-  /*------------------- LCD CONFIG --------------------
+  /*------------------- LCD CONFIG --------------------/
    1. Initialize LovyanGFX
    2. Setting display Orientation and Brightness
   ----------------------------------------------------*/
@@ -182,7 +206,7 @@ void setup(void)
   lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
   lcd.setBrightness(255);
 
-  /*------------------- LVGL CONFIG --------------------
+  /*------------------- LVGL CONFIG --------------------/
    1. Initialize LVGL
    2. LVGL : Setting up buffer to use for display
    3. LVGL : Setup & Initialize the display device driver
@@ -213,6 +237,7 @@ void setup(void)
 
 void loop()
 {
+  codeUpdate("AH3C7PE");
   getLocalTime();
   webSocket.loop();
   lv_timer_handler(); /* let the GUI do its work */
