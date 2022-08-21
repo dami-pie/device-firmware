@@ -1,8 +1,18 @@
 {
     "files.associations": {
+        ".sequelizerc": "javascript",
+        ".stylelintrc": "json",
+        ".prettierrc": "json",
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp"
     }
 }

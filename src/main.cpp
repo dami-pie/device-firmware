@@ -1,245 +1,105 @@
-#define LGFX_AUTODETECT // Autodetect board
-#define LGFX_USE_V1     // set to use new version of library
-
-#include "ui.h"
-
-#include "lv_conf.h"
-#include <lvgl.h>
-#include <LovyanGFX.hpp>
-
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <WebSocketsClient.h>
-#include <SocketIoClient.h>
+#include "mbedtls/md.h"
+#define ssid "GVT-8D59"
+#define password "arer3366547"
+WiFiServer server(80);
+String header;
+String output26State = "off";
+#define output26 26
 
-#include <time.h>
-
-#define SERVER_ADRESS "192.168.15.31"
-#define SERVER_URL "http://192.168.15.31:3030"
-#define LOGIN_PATH SERVER_URL "/login"
-
-#define NTP_SERVER "pool.ntp.br"
-
-static LGFX lcd; // declare display variable
-
-SocketIoClient webSocket;
-WiFiClient client;
-HTTPClient http;
-String full_login = LOGIN_PATH "?mac=", login_code;
-
-const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
-const int daylightOffset_sec = 0;
-
-/* Define screen resolution for LVGL */
-static const uint16_t screenWidth = 480, screenHeight = 320;
-
-/* Define screen buffer for LVGL */
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[screenWidth * 15];
-static lv_color_t buf2[screenWidth * 15];
-
-/*** Display callback to flush the buffer to screen ***/
-void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+const long timeout = 6000;
+void setup()
 {
-  uint32_t width = (area->x2 - area->x1 + 1), height = (area->y2 - area->y1 + 1);
-
-  lcd.startWrite();
-  lcd.setAddrWindow(area->x1, area->y1, width, height);
-  lcd.writePixels((lgfx::rgb565_t *)&color_p->full, width * height);
-  lcd.endWrite();
-
-  lv_disp_flush_ready(disp);
-}
-
-/*** Touchpad callback to read the touchpad ***/
-void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
-  uint16_t touchX, touchY;
-  bool touched = lcd.getTouch(&touchX, &touchY);
-  if (!touched)
-  {
-    data->state = LV_INDEV_STATE_RELEASED;
-    return;
-  }
-  data->state = LV_INDEV_STATE_PRESSED;
-  data->point.x = touchX, data->point.y = touchY; /*Set the coordinates*/
-}
-
-void codeUpdate(String code)
-{
-  /*Set data*/
-  char qrLogin[50] = "ecomp.com.br/device/";
-  strcat(qrLogin, code.c_str());
-  lv_label_set_text(ui_LabelInstructionLoginCode, code.c_str());
-  lv_qrcode_update(ui_QRCodeLogin, qrLogin, strlen(qrLogin));
-}
-
-void timeUpdate(struct tm tInfo, bool update = false)
-{
-  char time[6], date[17];
-  if (!update)
-  {
-    strcat(time, "--:--");
-    strcat(date, "-- do -- de ----");
-  }
-  else
-  {
-    strftime(time, 6, "%R", &tInfo);
-    strftime(date, 17, "%d do %m de %Y", &tInfo);
-  }
-  lv_label_set_text(ui_TimeLabel1, time);
-  lv_label_set_text(ui_DateLabel1, date);
-}
-
-void getLocalTime()
-{
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo))
-  {
-    timeUpdate(timeinfo);
-    return;
-  }
-  timeUpdate(timeinfo, 1);
-}
-
-void open_event(const char *payload, size_t length)
-{
-  // open the dor
-  // await close
-  // buzz if don't close it
-  // sleep if is allred closed
-  // digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  // digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  webSocket.disconnect();
-  // ESP.deepSleepMax();
-}
-
-void on_disconnect(const char *payload, size_t length)
-{
-  // digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  // ESP.deepSleepMax();
-}
-
-void setupWifi()
-{
-  // WiFi.begin("GVT-8D59", "arer3366547");
-  WiFi.begin("Silvia Home", "6FEtxH20:32@");
-
-  Serial.print("[WiFi]: Connecting");
+  Serial.begin(115200);
+  pinMode(output26, OUTPUT);
+  digitalWrite(output26, LOW);
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(150);
+    delay(500);
     Serial.print(".");
   }
-  Serial.println();
-
-  Serial.print("[WiFi]: Connected, IP address: ");
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.print("http://");
   Serial.println(WiFi.localIP());
-
-  full_login += WiFi.macAddress();
+  server.begin();
 }
-
-String login()
+void response(WiFiClient client, int status = 200)
 {
-  // server preconnect
-  client.connect(SERVER_URL, 3030);
-  Serial.println("[HTTP]: Logando... ");
-
-  bool http_sucess_connection = http.begin(client, full_login);
-  if (http_sucess_connection)
-  {
-    Serial.println("[HTTP]: Esperando resposta...");
-    int http_status = http.GET();
-    String http_response = "";
-    if (http_status != -1 && http_status == 200)
-    {
-      http_response = http.getString();
-      Serial.println("[HTTP Response]: \"" + http_response + "\"");
-      webSocket.begin("192.168.15.31", 3030);
-    }
-    else
-    {
-      Serial.print("[HTTP Error]: ");
-      Serial.print(http_status);
-    }
-    http.end();
-    return http_response;
-  }
-  else
-  {
-    Serial.println("[HTTP]: Falha de conexão...");
-    return "";
-  }
-}
-
-void setup(void)
-{
-
-  Serial.begin(115200); /* prepare for possible serial debug */
-  Serial.setDebugOutput(true);
+  Serial.print("HTTP/1.1 ");
+  Serial.println(status);
+  client.print("HTTP/1.1 ");
+  client.println(status);
+  Serial.println("Content-type:text/html");
+  client.println("Content-type:text/html");
+  Serial.println("Connection: close");
+  client.println("Connection: close");
   Serial.println();
-  // pinMode(LED_BUILTIN, OUTPUT);
-  delay(3000);
-  setupWifi();
-  String login_response = login();
-  if (login_response.length())
-  {
-    webSocket.on(login_response.c_str(), open_event);
-    webSocket.on("disconnect", on_disconnect);
-  }
-  else
-  {
-    // ESP.deepSleepMax();
-  }
-
-  configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
-
-  /*------------------- LCD CONFIG --------------------/
-   1. Initialize LovyanGFX
-   2. Setting display Orientation and Brightness
-  ----------------------------------------------------*/
-  lcd.init();
-  lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
-  lcd.setBrightness(255);
-
-  /*------------------- LVGL CONFIG --------------------/
-   1. Initialize LVGL
-   2. LVGL : Setting up buffer to use for display
-   3. LVGL : Setup & Initialize the display device driver
-   4. Change the following line to your display resolution
-   5. LVGL : Setup & Initialize the input device driver
-   ----------------------------------------------------*/
-  lv_init();
-  lv_disp_draw_buf_init(&draw_buf, buf, buf2, screenWidth * 15);
-
-  static lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-  disp_drv.draw_buf = &draw_buf,
-  disp_drv.flush_cb = display_flush,
-  disp_drv.hor_res = screenWidth,
-  disp_drv.ver_res = screenHeight;
-  lv_disp_drv_register(&disp_drv);
-
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv = {
-      .type = LV_INDEV_TYPE_POINTER,
-      .read_cb = touchpad_read,
-  };
-  lv_indev_drv_register(&indev_drv);
-
-  ui_init();
+  client.stop();
 }
 
+String getRequest(WiFiClient client)
+{
+  String request = "";
+  if (client)
+  {
+    unsigned long time = millis();
+    while (client.connected() && millis() - time <= timeout)
+    {
+      if (client.available())
+      {
+        time = millis();
+        char c = client.read();
+        if (c != '\r')
+        {
+          request += c;
+        }
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if (millis() - time > timeout)
+    {
+      client.stop();
+    }
+  }
+  return request;
+}
 void loop()
 {
-  codeUpdate("AH3C7PE");
-  getLocalTime();
-  webSocket.loop();
-  lv_timer_handler(); /* let the GUI do its work */
-  delay(5);
+  WiFiClient client = server.available();
+
+  if (client)
+  {
+    Serial.println(getRequest(client));
+    response(client);
+  }
 }
+
+// code for separete body for header
+// else if (request.endsWith("\n"))
+// {
+//   int start = request.indexOf("Content-Length: ");
+
+//   if (start > 1)
+//   {
+//     String content = (const char *)(request.begin() + start + 16);
+//     content.remove('\n');
+//     body_length = content.toInt();
+//     Serial.print("Content-Length: ");
+//     Serial.println(body_length);
+//   }
+//   else
+//   {
+//     response(client);
+//     break;
+//   }
+// }
