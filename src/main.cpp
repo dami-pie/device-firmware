@@ -13,13 +13,9 @@
 #include <WebSocketsClient.h>
 #include <SocketIoClient.h>
 
-#include <time.h>
-
 #define SERVER_ADRESS "192.168.15.31"
 #define SERVER_URL "http://192.168.15.31:3030"
 #define LOGIN_PATH SERVER_URL "/login"
-
-#define NTP_SERVER "pool.ntp.br"
 
 static LGFX lcd; // declare display variable
 
@@ -27,9 +23,6 @@ SocketIoClient webSocket;
 WiFiClient client;
 HTTPClient http;
 String full_login = LOGIN_PATH "?mac=", login_code;
-
-const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
-const int daylightOffset_sec = 0;
 
 /* Define screen resolution for LVGL */
 static const uint16_t screenWidth = 480, screenHeight = 320;
@@ -73,34 +66,6 @@ void codeUpdate(String code)
   strcat(qrLogin, code.c_str());
   lv_label_set_text(ui_LabelInstructionLoginCode, code.c_str());
   lv_qrcode_update(ui_QRCodeLogin, qrLogin, strlen(qrLogin));
-}
-
-void timeUpdate(struct tm tInfo, bool update = false)
-{
-  char time[6], date[17];
-  if (!update)
-  {
-    strcat(time, "--:--");
-    strcat(date, "-- do -- de ----");
-  }
-  else
-  {
-    strftime(time, 6, "%R", &tInfo);
-    strftime(date, 17, "%d do %m de %Y", &tInfo);
-  }
-  lv_label_set_text(ui_TimeLabel1, time);
-  lv_label_set_text(ui_DateLabel1, date);
-}
-
-void getLocalTime()
-{
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo))
-  {
-    timeUpdate(timeinfo);
-    return;
-  }
-  timeUpdate(timeinfo, 1);
 }
 
 void open_event(const char *payload, size_t length)
@@ -196,8 +161,6 @@ void setup(void)
     // ESP.deepSleepMax();
   }
 
-  configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
-
   /*------------------- LCD CONFIG --------------------/
    1. Initialize LovyanGFX
    2. Setting display Orientation and Brightness
@@ -238,7 +201,6 @@ void setup(void)
 void loop()
 {
   codeUpdate("AH3C7PE");
-  getLocalTime();
   webSocket.loop();
   lv_timer_handler(); /* let the GUI do its work */
   delay(5);

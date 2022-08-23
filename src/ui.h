@@ -9,8 +9,6 @@ extern "C" {
 #endif
 
 extern lv_obj_t * ui_LoginScreen;
-extern lv_obj_t * ui_TimeLabel1;
-extern lv_obj_t * ui_DateLabel1;
 extern lv_obj_t * ui_LoginLabel;
 extern lv_obj_t * ui_EcompLogoMini1;
 extern lv_obj_t * ui_LabelInstructionLogin;

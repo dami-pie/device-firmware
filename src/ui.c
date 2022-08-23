@@ -13,8 +13,6 @@
 
 ///////////////////// VARIABLES ////////////////////
 lv_obj_t * ui_LoginScreen;
-lv_obj_t * ui_TimeLabel1;
-lv_obj_t * ui_DateLabel1;
 lv_obj_t * ui_LoginLabel;
 lv_obj_t * ui_EcompLogoMini1;
 lv_obj_t * ui_LabelInstructionLogin;
@@ -42,35 +40,6 @@ void ui_LoginScreen_screen_init(void)
     lv_obj_clear_flag(ui_LoginScreen, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_add_event_cb(ui_LoginScreen, ui_event_LoginScreen, LV_EVENT_ALL, NULL);
-
-    // ui_TimeLabel1
-
-    ui_TimeLabel1 = lv_label_create(ui_LoginScreen);
-
-    lv_obj_set_width(ui_TimeLabel1, LV_SIZE_CONTENT);
-    lv_obj_set_height(ui_TimeLabel1, LV_SIZE_CONTENT);
-
-    lv_obj_set_x(ui_TimeLabel1, 10);
-    lv_obj_set_y(ui_TimeLabel1, 10);
-
-    lv_obj_set_style_text_color(ui_TimeLabel1, lv_color_hex(C_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_TimeLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui_TimeLabel1, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_TimeLabel1, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    // ui_DateLabel1
-
-    ui_DateLabel1 = lv_label_create(ui_LoginScreen);
-
-    lv_obj_set_width(ui_DateLabel1, LV_SIZE_CONTENT);
-    lv_obj_set_height(ui_DateLabel1, LV_SIZE_CONTENT);
-
-    lv_obj_set_x(ui_DateLabel1, 10);
-    lv_obj_set_y(ui_DateLabel1, 45);
-
-    lv_obj_set_style_text_color(ui_DateLabel1, lv_color_hex(C_BLUE), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DateLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui_DateLabel1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_LoginLabel
 
