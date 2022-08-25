@@ -10,10 +10,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <WebSocketsClient.h>
-#include <SocketIoClient.h>
-
+#include <TOTP.h>
 #include <time.h>
+#include <NTPClient.h>
 
 #define SERVER_ADRESS "192.168.15.31"
 #define SERVER_URL "http://192.168.15.31:3030"
@@ -21,9 +20,14 @@
 
 #define NTP_SERVER "pool.ntp.br"
 
+// uint8_t hmacKey[] = {0x4a, 0x42, 0x53, 0x57, 0x59, 0x33, 0x44, 0x50, 0x45, 0x72, 0x50, 0x4b, 0x33, 0x50, 0x58, 0x50};
+uint8_t hmacKey[] = {0x18, 0x18, 0x87, 0xa0};
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
 static LGFX lcd; // declare display variable
 
-SocketIoClient webSocket;
+TOTP otp(hmacKey, 4);
 WiFiClient client;
 HTTPClient http;
 String full_login = LOGIN_PATH "?mac=", login_code;
@@ -92,42 +96,25 @@ void timeUpdate(struct tm tInfo, bool update = false)
   lv_label_set_text(ui_DateLabel1, date);
 }
 
-void getLocalTime()
+tm getLocalTime()
 {
   struct tm timeinfo;
+
   if (!getLocalTime(&timeinfo))
-  {
     timeUpdate(timeinfo);
-    return;
-  }
-  timeUpdate(timeinfo, 1);
-}
+  else
+    timeUpdate(timeinfo, 1);
 
-void open_event(const char *payload, size_t length)
-{
-  // open the dor
-  // await close
-  // buzz if don't close it
-  // sleep if is allred closed
-  // digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  // digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  webSocket.disconnect();
-  // ESP.deepSleepMax();
-}
-
-void on_disconnect(const char *payload, size_t length)
-{
-  // digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  // ESP.deepSleepMax();
+  return timeinfo;
 }
 
 void setupWifi()
 {
   // WiFi.begin("GVT-8D59", "arer3366547");
-  WiFi.begin("Silvia Home", "6FEtxH20:32@");
+  WiFi.begin("meet.local.com", "UlduEQrd");
+  // WiFi.begin("Silvia Home", "6FEtxH20:32@");
+  // WiFi.begin("DESKTOP-7FAU9EJ 0777", "-s1131N4");
+  delay(100);
 
   Serial.print("[WiFi]: Connecting");
   while (WiFi.status() != WL_CONNECTED)
@@ -159,7 +146,7 @@ String login()
     {
       http_response = http.getString();
       Serial.println("[HTTP Response]: \"" + http_response + "\"");
-      webSocket.begin("192.168.15.31", 3030);
+      // webSocket.begin("192.168.15.31", 3030);
     }
     else
     {
@@ -185,17 +172,9 @@ void setup(void)
   // pinMode(LED_BUILTIN, OUTPUT);
   delay(3000);
   setupWifi();
-  String login_response = login();
-  if (login_response.length())
-  {
-    webSocket.on(login_response.c_str(), open_event);
-    webSocket.on("disconnect", on_disconnect);
-  }
-  else
-  {
-    // ESP.deepSleepMax();
-  }
-
+  // String login_response = login();
+  // }
+  timeClient.begin();
   configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
 
   /*------------------- LCD CONFIG --------------------/
@@ -204,7 +183,7 @@ void setup(void)
   ----------------------------------------------------*/
   lcd.init();
   lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
-  lcd.setBrightness(255);
+  lcd.setBrightness(200);
 
   /*------------------- LVGL CONFIG --------------------/
    1. Initialize LVGL
@@ -237,9 +216,14 @@ void setup(void)
 
 void loop()
 {
-  codeUpdate("AH3C7PE");
-  getLocalTime();
-  webSocket.loop();
-  lv_timer_handler(); /* let the GUI do its work */
-  delay(5);
+  tm tm = getLocalTime();
+  timeClient.update();
+  unsigned long time = timeClient.getEpochTime();
+  char *code = otp.getCode(time);
+  Serial.print(time);
+  Serial.print(" -> ");
+  Serial.println(code);
+  codeUpdate(code);
+  lv_timer_handler();
+  delay(10);
 }
