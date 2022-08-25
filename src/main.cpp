@@ -2,6 +2,7 @@
 #define LGFX_USE_V1     // set to use new version of library
 
 #include "ui.h"
+#include "ntpTime.cpp"
 
 #include "lv_conf.h"
 #include <lvgl.h>
@@ -9,25 +10,24 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <WebSocketsClient.h>
-#include <SocketIoClient.h>
 
-#define SERVER_ADRESS "192.168.15.31"
-#define SERVER_URL "http://192.168.15.31:3030"
-#define LOGIN_PATH SERVER_URL "/login"
+const long gmtOffset_sec = (-3); // GMT-03 [Brasilia]
+const int ntpTimeUpdate_sec = 1800000;
+
+WiFiServer server(80);
+String header;
+String output26State = "off";
+#define output26 26
+
+const long timeout = 6000;
 
 static LGFX lcd; // declare display variable
 
-SocketIoClient webSocket;
-WiFiClient client;
-HTTPClient http;
-String full_login = LOGIN_PATH "?mac=", login_code;
-
-/* Define screen resolution for LVGL */
+/*------------------- LVGL CONFIG --------------------/
+ 1. LVGL : Define screen resolution for LVGL
+ 2. LVGL : Define screen buffer for LVGL
+ ----------------------------------------------------*/
 static const uint16_t screenWidth = 480, screenHeight = 320;
-
-/* Define screen buffer for LVGL */
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[screenWidth * 15];
 static lv_color_t buf2[screenWidth * 15];
@@ -68,18 +68,55 @@ void codeUpdate(String code)
   lv_qrcode_update(ui_QRCodeLogin, qrLogin, strlen(qrLogin));
 }
 
-void open_event(const char *payload, size_t length)
+void getUpdate()
 {
-  // open the dor
-  // await close
-  // buzz if don't close it
-  // sleep if is allred closed
-  // digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
-  // digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
-  webSocket.disconnect();
-  // ESP.deepSleepMax();
+  lv_label_set_text(ui_TimeLabel1, timeUpdate().c_str());
+  lv_label_set_text(ui_DateLabel1, dateUpdate().c_str());
+}
+
+void response(WiFiClient client, int status = 200)
+{
+  Serial.print("HTTP/1.1 ");
+  Serial.println(status);
+  client.print("HTTP/1.1 ");
+  client.println(status);
+  Serial.println("Content-type:text/html");
+  client.println("Content-type:text/html");
+  Serial.println("Connection: close");
+  client.println("Connection: close");
+  Serial.println();
+  client.stop();
+}
+
+String getRequest(WiFiClient client)
+{
+  String request = "";
+  if (client)
+  {
+    unsigned long time = millis();
+    while (client.connected() && millis() - time <= timeout)
+    {
+      if (client.available())
+      {
+        time = millis();
+        char c = client.read();
+        if (c != '\r')
+        {
+          request += c;
+        }
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if (millis() - time > timeout)
+    {
+      client.stop();
+    }
+  }
+  return request;
 }
 
 void on_disconnect(const char *payload, size_t length)
@@ -105,40 +142,7 @@ void setupWifi()
   Serial.print("[WiFi]: Connected, IP address: ");
   Serial.println(WiFi.localIP());
 
-  full_login += WiFi.macAddress();
-}
-
-String login()
-{
-  // server preconnect
-  client.connect(SERVER_URL, 3030);
-  Serial.println("[HTTP]: Logando... ");
-
-  bool http_sucess_connection = http.begin(client, full_login);
-  if (http_sucess_connection)
-  {
-    Serial.println("[HTTP]: Esperando resposta...");
-    int http_status = http.GET();
-    String http_response = "";
-    if (http_status != -1 && http_status == 200)
-    {
-      http_response = http.getString();
-      Serial.println("[HTTP Response]: \"" + http_response + "\"");
-      webSocket.begin("192.168.15.31", 3030);
-    }
-    else
-    {
-      Serial.print("[HTTP Error]: ");
-      Serial.print(http_status);
-    }
-    http.end();
-    return http_response;
-  }
-  else
-  {
-    Serial.println("[HTTP]: Falha de conexão...");
-    return "";
-  }
+  server.begin();
 }
 
 void setup(void)
@@ -150,16 +154,8 @@ void setup(void)
   // pinMode(LED_BUILTIN, OUTPUT);
   delay(3000);
   setupWifi();
-  String login_response = login();
-  if (login_response.length())
-  {
-    webSocket.on(login_response.c_str(), open_event);
-    webSocket.on("disconnect", on_disconnect);
-  }
-  else
-  {
-    // ESP.deepSleepMax();
-  }
+
+  begin(gmtOffset_sec);
 
   /*------------------- LCD CONFIG --------------------/
    1. Initialize LovyanGFX
@@ -201,7 +197,13 @@ void setup(void)
 void loop()
 {
   codeUpdate("AH3C7PE");
-  webSocket.loop();
+  WiFiClient client = server.available();
+  if (client)
+  {
+    Serial.println(getRequest(client));
+    response(client);
+  }
+  getUpdate();
   lv_timer_handler(); /* let the GUI do its work */
   delay(5);
 }
