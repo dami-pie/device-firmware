@@ -13,6 +13,7 @@
         "unordered_set": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "ui_helpers.h": "c"
+        "ui_helpers.h": "c",
+        "wificlient.h": "c"
     }
 }
