@@ -1,6 +1,5 @@
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #if __has_include("lvgl.h")
@@ -9,18 +8,22 @@ extern "C"
 #include "lvgl/lvgl.h"
 #endif
 
-    extern lv_obj_t *ui_LoginScreen;
-    extern lv_obj_t *ui_TimeLabel1;
-    extern lv_obj_t *ui_DateLabel1;
-    extern lv_obj_t *ui_LoginLabel;
-    extern lv_obj_t *ui_EcompLogoMini1;
-    extern lv_obj_t *ui_LabelInstructionLogin;
-    extern lv_obj_t *ui_LabelInstructionLoginCode;
-    extern lv_obj_t *ui_QRCodeLogin;
+extern lv_obj_t * ui_LoginScreen;
+extern lv_obj_t * ui_TimeLabel1;
+extern lv_obj_t * ui_DateLabel1;
+extern lv_obj_t * ui_LoginLabel;
+extern lv_obj_t * ui_EcompLogoMini1;
+extern lv_obj_t * ui_LabelInstructionLogin;
+extern lv_obj_t * ui_LabelInstructionLoginCode;
+extern lv_obj_t * ui_QRCodeLogin;
 
-    LV_IMG_DECLARE(ui_img_ecomp_png); // assets\ECOMP.png
 
-    void ui_init(void);
+LV_IMG_DECLARE(ui_img_ecomp_r_png);    // assets\ECOMP_R.png
+
+
+
+
+void ui_init(void);
 
 #ifdef __cplusplus
 } /*extern "C"*/
