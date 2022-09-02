@@ -11,6 +11,10 @@
 bool connection_setup_success;
 void handle_open_door(void *p);
 
+uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
+
+OTP door_code("door_otp", key, 500);
+
 void setup(void)
 {
 
@@ -21,7 +25,7 @@ void setup(void)
   delay(3000);
   connection_setup_success = setup_wifi(); // && login_on_server();
   setup_screen();
-  init_otp();
+  door_code.begin(1);
   delay(1000);
   setup_server(handle_open_door, "server_request");
 }
@@ -51,7 +55,7 @@ void handle_open_door(void *p)
 
 void loop()
 {
-  codeUpdate(otp_code);
+  codeUpdate(door_code.otp_code);
   getLocalTime();
   lv_timer_handler();
   delay(1000);

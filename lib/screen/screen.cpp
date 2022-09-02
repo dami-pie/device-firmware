@@ -68,9 +68,21 @@ tm getLocalTime()
 void setup_screen()
 {
   Serial.println("[Screen]: ligando tela");
+  /*------------------- LCD CONFIG --------------------/
+   1. Initialize LovyanGFX
+   2. Setting display Orientation and Brightness
+  ----------------------------------------------------*/
   lcd.init();
   lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
-  lcd.setBrightness(200);
+  lcd.setBrightness(255);
+
+  /*------------------- LVGL CONFIG --------------------/
+   1. Initialize LVGL
+   2. LVGL : Setting up buffer to use for display
+   3. LVGL : Setup & Initialize the display device driver
+   4. Change the following line to your display resolution
+   5. LVGL : Setup & Initialize the input device driver
+   ----------------------------------------------------*/
   lv_init();
   lv_disp_draw_buf_init(&draw_buf, buf, buf2, screenWidth * 15);
 

@@ -1,50 +1,59 @@
 #include "otp.h"
 
-// NTPClient timeClient(ntpUDP);
-TaskHandle_t otp_task_handle = NULL;
-TOTP otp(hmacKey, 4);
-String otp_code;
-bool otp_updating = false;
 struct tm timeinfo;
-
 const long gmtOffset_sec = 3600 * (-3); // GMT-03 [Brasilia]
 const int daylightOffset_sec = 0;
 
-void upadte_otp()
+OTP::OTP(const char *_name, uint8_t *_hmacKey, int update_timeout) : TOTP(_hmacKey, sizeof(_hmacKey))
 {
-  otp_updating = true;
-  // Serial.println("[TOTP]: Atualizando TOTP....");
+  this->name = _name;
+  this->update_timeout = update_timeout;
+}
+OTP::~OTP()
+{
+  this->stop();
+  free(this);
+}
+
+bool OTP::is_updating()
+{
+  return this->updating;
+}
+
+void OTP::update()
+{
+  this->updating = true;
   getLocalTime(&timeinfo);
   unsigned long time = mktime(&timeinfo);
-  otp_code = otp.getCode(time);
-  otp_updating = false;
-  // Serial.println("[TOTP]: Atualizado!");
+  this->otp_code = this->getCode(time);
+  this->updating = false;
 }
 
 void handle_update_otp(void *p)
 {
+  OTP *otp = (OTP *)p;
   for (;;)
   {
-    while (otp_updating)
+    while (otp->is_updating())
       ;
-    upadte_otp();
-    delay(500);
+    otp->update();
+    delay(otp->update_timeout);
   }
 }
 
-void init_otp()
+void OTP::begin(UBaseType_t uxPriority = 1)
 {
   configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
   Serial.println("[TOTP]: Iniciando TOTP....");
-  xTaskCreate(handle_update_otp, "otptask", 10240, NULL, 1, &otp_task_handle);
+  xTaskCreate(handle_update_otp, this->name, 10240, this, uxPriority, &(this->task_handle));
   // configASSERT(otp_task_handle);
 }
 
-void stop_otp()
+void OTP::stop()
 {
   // Use the handle to delete the task.
-  if (otp_task_handle != NULL)
+  if (this->task_handle != NULL)
   {
-    vTaskDelete(otp_task_handle);
+    vTaskDelete(this->task_handle);
   }
 }
