@@ -3,6 +3,11 @@ extern "C"
 {
 #endif
 
+#define C_BLACK 0x000000
+#define C_BLUE 0x1D4484
+#define C_UWHITE 0xffffff
+#define C_WHITE 0xf6f6f6
+
 #if __has_include("lvgl.h")
 #include "lvgl.h"
 #else
@@ -13,9 +18,8 @@ extern "C"
     extern lv_obj_t *ui_TimeLabel1;
     extern lv_obj_t *ui_DateLabel1;
     extern lv_obj_t *ui_LoginLabel;
+    extern lv_obj_t *ui_WifiLabel;
     extern lv_obj_t *ui_EcompLogoMini1;
-    extern lv_obj_t *ui_LabelInstructionLogin;
-    extern lv_obj_t *ui_LabelInstructionLoginCode;
     extern lv_obj_t *ui_QRCodeLogin;
 
     LV_IMG_DECLARE(ui_img_ecomp_png); // assets\ECOMP.png

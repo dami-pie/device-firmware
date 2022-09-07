@@ -1,15 +1,12 @@
-#include <time.h>
-#include <Arduino.h>
-
-#define NTP_SERVER_1 "a.st1.ntp.br"
-#define NTP_SERVER_2 "b.st1.ntp.br"
+#include "ntpTime.h"
 
 struct tm timeInfo;
 
-void begin(long gmtOffSet = 0, int dayLightOffSet = 0, String ntpServer = NTP_SERVER_1)
+void timer__begin(long gmtOffSet, int dayLightOffSet, String ntpServer)
 {
-    configTime(3600 * gmtOffSet, 3600 * dayLightOffSet, ntpServer.c_str(), NTP_SERVER_2);
-    if (!getLocalTime(&timeInfo)) {
+    configTime(gmtOffSet * 3600, dayLightOffSet * 3600, NTP_SERVER_1, ntpServer.c_str());
+    if (!getLocalTime(&timeInfo))
+    {
         Serial.println("erro");
     }
 }
