@@ -3,12 +3,16 @@
 #include <WiFi.h>
 #include "connection.h"
 #include "otp.h"
+#include "pitches.h"
 
+#define DOOR_PIN 2
+#define BUZZER_PIN 4
 #define await(condition) \
   while (condition)      \
     ;
 
 bool connection_setup_success;
+bool is_door_open = false;
 void handle_open_door(void *p);
 
 uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
@@ -21,7 +25,7 @@ void setup(void)
   Serial.begin(115200); /* prepare for possible serial debug */
   Serial.setDebugOutput(true);
   Serial.println();
-  // pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(DOOR_PIN, OUTPUT);
   delay(3000);
   connection_setup_success = setup_wifi(); // && login_on_server();
   setup_screen();
@@ -43,7 +47,14 @@ void handle_open_door(void *p)
       {
         Serial.println(request);
         response(client);
+        yield();
+        digitalWrite(DOOR_PIN, HIGH);
         Serial.println("PORTA ABERTA!");
+        tone(BUZZER_PIN, NOTE_E5);
+        delay(1000);
+        noTone(BUZZER_PIN);
+        digitalWrite(DOOR_PIN, LOW);
+        Serial.println("PORTA FECHADA!");
       }
       else
       {
