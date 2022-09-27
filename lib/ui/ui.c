@@ -12,21 +12,22 @@
 #define C_WHITE 0xf6f6f6
 
 ///////////////////// VARIABLES ////////////////////
-lv_obj_t * ui_LoginScreen;
+lv_obj_t *ui_LoginScreen;
 lv_obj_t *ui_TimeLabel1;
 lv_obj_t *ui_DateLabel1;
-lv_obj_t * ui_LoginLabel;
-lv_obj_t * ui_EcompLogoMini1;
-lv_obj_t * ui_LabelInstructionLogin;
-lv_obj_t * ui_LabelInstructionLoginCode;
-lv_obj_t * ui_QRCodeLogin;
+lv_obj_t *ui_LoginLabel;
+lv_obj_t *ui_EcompLogoMini1;
+lv_obj_t *ui_LabelInstructionLogin;
+lv_obj_t *ui_LabelInstructionLoginCode;
+lv_obj_t *ui_QRCodeLogin;
 
 ///////////////////// FUNCTIONS ////////////////////
-static void ui_event_LoginScreen(lv_event_t * e)
+static void ui_event_LoginScreen(lv_event_t *e)
 {
     lv_event_code_t event = lv_event_get_code(e);
-    lv_obj_t * ta = lv_event_get_target(e);
-    if(event == LV_EVENT_CLICKED) {
+    lv_obj_t *ta = lv_event_get_target(e);
+    if (event == LV_EVENT_CLICKED)
+    {
         _ui_screen_change(ui_LoginScreen, LV_SCR_LOAD_ANIM_OVER_TOP, 150, 0);
     }
 }
@@ -151,9 +152,9 @@ void ui_LoginScreen_screen_init(void)
 
 void ui_init(void)
 {
-    lv_disp_t * dispp = lv_disp_get_default();
-    lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
-                                               false, LV_FONT_DEFAULT);
+    lv_disp_t *dispp = lv_disp_get_default();
+    lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
+                                              false, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
     ui_LoginScreen_screen_init();
     lv_disp_load_scr(ui_LoginScreen);

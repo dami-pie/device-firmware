@@ -5,8 +5,8 @@
 #include "otp.h"
 #include "pitches.h"
 
-#define DOOR_PIN 2
-#define BUZZER_PIN 4
+#define DOOR_PIN 4
+#define BUZZER_PIN 2
 #define await(condition) \
   while (condition)      \
     ;
@@ -26,9 +26,9 @@ void setup(void)
   Serial.setDebugOutput(true);
   Serial.println();
   pinMode(DOOR_PIN, OUTPUT);
+  setup_screen();
   delay(3000);
   connection_setup_success = setup_wifi(); // && login_on_server();
-  setup_screen();
   door_code.begin(1);
   delay(1000);
   setup_server(handle_open_door, "server_request");

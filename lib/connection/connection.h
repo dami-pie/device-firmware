@@ -20,12 +20,12 @@
 #define SERVER_PORT 80
 #endif
 
-#ifndef WIFI_SSID
-#define WIFI_SSID "meet.local.com"
-#endif
-#ifndef WIFI_PASSWORD
-#define WIFI_PASSWORD "UlduEQrd"
-#endif
+// #ifndef WIFI_SSID
+// #define WIFI_SSID "meet.local.com"
+// #endif
+// #ifndef WIFI_PASSWORD
+// #define WIFI_PASSWORD "UlduEQrd"
+// #endif
 #define LOGIN_BODY(mac) ("{ \"mac\": \"" + mac + "\", \"ip\": \"" + SERVER_IP + "\" }")
 
 extern WiFiServer server;

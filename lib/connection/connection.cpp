@@ -88,7 +88,12 @@ void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
 
 bool setup_wifi()
 {
+#ifndef WIFI_PASSWORD
+  WiFi.begin(WIFI_SSID);
+#endif
+#ifdef WIFI_PASSWORD
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
   delay(100);
   Serial.print("[WiFi]: Connecting to ");
   Serial.print(WIFI_SSID);

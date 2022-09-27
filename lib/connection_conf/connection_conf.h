@@ -4,7 +4,13 @@
 #define API_DOMAIN "192.168.15.31"
 #define API_URL API_PROTOCOL "://" API_DOMAIN
 #define SERVER_PORT 80
-#define WIFI_SSID "GVT-8D59"
-#define WIFI_PASSWORD "arer3366547"
 #include "secret.h"
+#ifdef SECRET_WIFI_SSID
+#define WIFI_SSID SECRET_WIFI_SSID
+#elif
+#define WIFI_SSID "dlink"
+#endif
+#ifdef SECRET_WIFI_PASSWORD
+#define WIFI_PASSWORD SECRET_WIFI_PASSWORD
+#endif
 #endif
