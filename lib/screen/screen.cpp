@@ -47,7 +47,6 @@ void getUpdate()
 void setup_screen()
 {
   Serial.println("[Screen]: ligando tela");
-  
   timer__begin(gmtOffset);
 
   /*------------------- LCD CONFIG --------------------/
@@ -59,7 +58,6 @@ void setup_screen()
   lcd.setBrightness(255);
 
   /*------------------- LVGL CONFIG --------------------/
-
    1. Initialize LVGL
    2. LVGL : Setting up buffer to use for display
    3. LVGL : Setup & Initialize the display device driver

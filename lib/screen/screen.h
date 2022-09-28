@@ -6,7 +6,6 @@
 #define C_BLUE 0x1D4484
 #define C_WHITE 0xf6f6f6
 
-
 #include "ntpTime.h"
 #include "ui.h"
 #include "lv_conf.h"
