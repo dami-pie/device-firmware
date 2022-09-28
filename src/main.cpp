@@ -4,6 +4,7 @@
 #include "connection.h"
 #include "otp.h"
 #include "pitches.h"
+#include "RFID.h"
 
 #define DOOR_PIN 4
 #define BUZZER_PIN 2

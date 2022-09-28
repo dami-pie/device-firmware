@@ -39,14 +39,13 @@ String getRequest(WiFiClient client)
   if (client)
   {
     unsigned long time = millis();
-    unsigned long time = millis();
     while (!client.connected() && millis() - time <= 5000)
       ;
 
     time = millis();
     if (!client.connected())
     {
-      Serial.println('Connection timeout');
+      Serial.println("Connection timeout");
       return "";
     }
     while (client.connected() && millis() - time <= 2e4)
