@@ -4,15 +4,38 @@ WiFiServer server;
 WiFiClient client;
 TaskHandle_t server_task_handle;
 
-void response(WiFiClient client, int status)
+void response(WiFiClient client, int status, const char *body)
 {
-  Serial.print("HTTP/1.1 ");
+  // #define res(log, msg) (client.println(msg) && log && Serial.println(msg))
+  Serial.print(F("HTTP/1.1 "));
   Serial.println(status);
   client.print("HTTP/1.1 ");
   client.println(status);
-  Serial.println("Content-type: text/html");
+
+  Serial.println(F("Content-type: application/json"));
+  client.println("Content-type: application/json");
+  Serial.println(F("Connection: close"));
+  client.println("Connection: close");
+  if (body != nullptr && sizeof(body))
+  {
+    client.print('\n');
+    Serial.print('\n');
+    client.println(body);
+    Serial.println(body);
+  }
+  client.print('\n');
+  Serial.print('\n');
+  client.stop();
+}
+void response(WiFiClient client, int status)
+{
+  Serial.print(F("HTTP/1.1 "));
+  Serial.println(status);
+  client.print("HTTP/1.1 ");
+  client.println(status);
+  Serial.println(F("Content-type: text/html"));
   client.println("Content-type: text/html");
-  Serial.println("Connection: close");
+  Serial.println(F("Connection: close"));
   client.println("Connection: close");
   Serial.println();
   client.stop();
@@ -45,7 +68,7 @@ String getRequest(WiFiClient client)
     time = millis();
     if (!client.connected())
     {
-      Serial.println("Connection timeout");
+      Serial.println(F("Connection timeout"));
       return "";
     }
     while (client.connected() && millis() - time <= 2e4)
@@ -80,10 +103,10 @@ void setup_server(TaskFunction_t handle, const char *pcName)
 
 void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
 {
-  Serial.print("[host]: iniciando host... ");
+  Serial.print(F("[host]: iniciando host... "));
   server = WiFiServer(port);
   server.begin();
-  Serial.println("Criando task...");
+  Serial.println(F("Criando task..."));
   xTaskCreate(
       handle,             /* Task function. */
       pcName,             /* name of task. */
@@ -97,14 +120,23 @@ void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
 
 bool setup_wifi()
 {
-#ifndef WIFI_PASSWORD
+  WiFi.disconnect(true); // disconnect form wifi to set new wifi connection
+  WiFi.mode(WIFI_STA);   // init wifi mode
+
+#if WIFI_PROTOCOL == EAPE
+  esp_wifi_sta_wpa2_ent_set_username(WIFI_USERNAME, sizeof(WIFI_USERNAME));
+  esp_wifi_sta_wpa2_ent_set_password(WIFI_PASSWORD, sizeof(WIFI_PASSWORD));
+  esp_wifi_sta_wpa2_ent_enable();
+  // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+  WiFi.begin(WIFI_SSID);
+#elif WIFI_PROTOCOL == EAPP && defined(WIFI_PASSWORD)
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#else
   WiFi.begin(WIFI_SSID);
 #endif
-#ifdef WIFI_PASSWORD
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
+
   delay(100);
-  Serial.print("[WiFi]: Connecting to ");
+  Serial.print(F("[WiFi]: Connecting to "));
   Serial.print(WIFI_SSID);
   for (int count = 0; WiFi.status() != WL_CONNECTED && count < 150; count)
   {
@@ -117,7 +149,7 @@ bool setup_wifi()
     return false;
   }
   SERVER_IP = WiFi.localIP().toString();
-  Serial.print("[WiFi]: Connected, IP address: ");
+  Serial.print(F("[WiFi]: Connected, IP address: "));
   Serial.println(SERVER_IP);
   return true;
 }
@@ -133,11 +165,11 @@ bool login_on_server()
     bool http_sucess_connection = http.begin(client, API_URL);
     if (http_sucess_connection)
     {
-      Serial.println("[API]: Connectado, enviando sinal ");
+      Serial.println(F("[API]: Connectado, enviando sinal "));
       http.addHeader("Content-Type", "application/json");
       int http_status = http.POST(LOGIN_BODY(WiFi.macAddress()));
 
-      Serial.print("[API]: Esperando resposta");
+      Serial.print(F("[API]: Esperando resposta"));
       while (client.available())
         Serial.print('.');
       Serial.println();
@@ -148,7 +180,7 @@ bool login_on_server()
       }
       else
       {
-        Serial.print("[API Error]: ");
+        Serial.print(F("[API Error]: "));
         Serial.print(http_status);
         return false;
       }
@@ -157,7 +189,7 @@ bool login_on_server()
     }
     else
     {
-      Serial.println("[API]: Falha de conexão...");
+      Serial.println(F("[API]: Falha de conexão..."));
       return false;
     }
   }

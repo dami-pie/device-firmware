@@ -44,7 +44,7 @@ void handle_update_otp(void *p)
 void OTP::begin(UBaseType_t uxPriority = 1)
 {
   configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
-  Serial.println("[TOTP]: Iniciando TOTP....");
+  Serial.println(F("[TOTP]: Iniciando TOTP...."));
   xTaskCreate(handle_update_otp, this->name, 10240, this, uxPriority, &(this->task_handle));
   // configASSERT(otp_task_handle);
 }

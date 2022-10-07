@@ -7,7 +7,7 @@ void timer__begin(long gmtOffSet, int dayLightOffSet, String ntpServer)
     configTime(gmtOffSet * 3600, dayLightOffSet * 3600, NTP_SERVER_1, ntpServer.c_str());
     if (!getLocalTime(&timeInfo))
     {
-        Serial.println("erro");
+        Serial.println(F("[NTP]: erro on load data"));
     }
 }
 

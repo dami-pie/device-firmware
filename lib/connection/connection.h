@@ -6,26 +6,10 @@
 #include <HTTPClient.h>
 #include "connection_conf.h"
 
-#ifndef API_PROTOCOL
-#define API_PROTOCOL "http"
+#if WIFI_PROTOCOL == EAPE
+#include <esp_wpa2.h>
+#include <esp_wifi.h>
 #endif
-#ifndef API_DOMAIN
-#define API_DOMAIN "192.168.15.31"
-#endif
-#ifndef API_URL
-#define API_URL API_PROTOCOL "://" API_DOMAIN
-#endif
-
-#ifndef SERVER_PORT
-#define SERVER_PORT 80
-#endif
-
-// #ifndef WIFI_SSID
-// #define WIFI_SSID "meet.local.com"
-// #endif
-// #ifndef WIFI_PASSWORD
-// #define WIFI_PASSWORD "UlduEQrd"
-// #endif
 #define LOGIN_BODY(mac) ("{ \"mac\": \"" + mac + "\", \"ip\": \"" + SERVER_IP + "\" }")
 
 extern WiFiServer server;
@@ -33,6 +17,7 @@ extern WiFiClient client;
 static String SERVER_IP;
 extern TaskHandle_t server_task_handle;
 
+void response(WiFiClient client, int status, const char *body);
 void response(WiFiClient client, int status);
 void response(WiFiClient client);
 void response();
