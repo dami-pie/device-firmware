@@ -1,124 +1,29 @@
 #include "connection.h"
 
-WiFiServer server;
-WiFiClient client;
-TaskHandle_t server_task_handle;
+// WiFiServer server;
+// WiFiClient client;
+// TaskHandle_t server_task_handle;
 
-void response(WiFiClient client, int status, const char *body)
+WiFiClientSecure wifi_client;
+
+uint8_t ConnectionClass::callbacks_length = 0;
+CallbackSelector ConnectionClass::callbacks[10];
+
+ConnectionClass::ConnectionClass(WiFiClientSecure client) : PubSubClient(client)
 {
-  // #define res(log, msg) (client.println(msg) && log && Serial.println(msg))
-  Serial.print(F("HTTP/1.1 "));
-  Serial.println(status);
-  client.print("HTTP/1.1 ");
-  client.println(status);
+  this->_wifi_client = client;
+  this->client_id = WiFi.macAddress();
+  this->setCallback(handle_callback_selector);
+};
 
-  Serial.println(F("Content-type: application/json"));
-  client.println("Content-type: application/json");
-  Serial.println(F("Connection: close"));
-  client.println("Connection: close");
-  if (body != nullptr && sizeof(body))
-  {
-    client.print('\n');
-    Serial.print('\n');
-    client.println(body);
-    Serial.println(body);
-  }
-  client.print('\n');
-  Serial.print('\n');
-  client.stop();
-}
-void response(WiFiClient client, int status)
+ConnectionClass::ConnectionClass() : PubSubClient(wifi_client)
 {
-  Serial.print(F("HTTP/1.1 "));
-  Serial.println(status);
-  client.print("HTTP/1.1 ");
-  client.println(status);
-  Serial.println(F("Content-type: text/html"));
-  client.println("Content-type: text/html");
-  Serial.println(F("Connection: close"));
-  client.println("Connection: close");
-  Serial.println();
-  client.stop();
-}
+  this->_wifi_client = wifi_client;
+  this->client_id = WiFi.macAddress();
+  this->setCallback(handle_callback_selector);
+};
 
-void response(WiFiClient client)
-{
-  response(client, 200);
-}
-
-void response()
-{
-  response(client, 200);
-}
-
-String getRequest()
-{
-  return getRequest(client);
-}
-
-String getRequest(WiFiClient client)
-{
-  String request = "";
-  if (client)
-  {
-    unsigned long time = millis();
-    while (!client.connected() && millis() - time <= 5000)
-      ;
-
-    time = millis();
-    if (!client.connected())
-    {
-      Serial.println(F("Connection timeout"));
-      return "";
-    }
-    while (client.connected() && millis() - time <= 2e4)
-    {
-      if (client.available())
-      {
-        time = millis();
-        char c = client.read();
-        if (c != '\r')
-        {
-          request += c;
-        }
-      }
-      else
-      {
-        break;
-      }
-    }
-
-    if (millis() - time > 2e4)
-    {
-      client.stop();
-    }
-  }
-  return request;
-}
-
-void setup_server(TaskFunction_t handle, const char *pcName)
-{
-  setup_server(handle, pcName, 80);
-}
-
-void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
-{
-  Serial.print(F("[host]: iniciando host... "));
-  server = WiFiServer(port);
-  server.begin();
-  Serial.println(F("Criando task..."));
-  xTaskCreate(
-      handle,             /* Task function. */
-      pcName,             /* name of task. */
-      20480,              /* Stack size of task in bytes (20Kb)*/
-      &server,            /* parameter of the task */
-      1,                  /* priority of the task */
-      &server_task_handle /* Task handle to keep track of created task */
-  );                      /* pin task to core 0 */
-  delay(500);
-}
-
-bool setup_wifi()
+bool ConnectionClass::setup_wifi()
 {
   WiFi.disconnect(true); // disconnect form wifi to set new wifi connection
   WiFi.mode(WIFI_STA);   // init wifi mode
@@ -148,40 +53,43 @@ bool setup_wifi()
   {
     return false;
   }
-  SERVER_IP = WiFi.localIP().toString();
-  Serial.print(F("[WiFi]: Connected, IP address: "));
-  Serial.println(SERVER_IP);
+  // SERVER_IP = WiFi.localIP().toString();
+  Serial.print(F("[Connection]: Connected. IP: "));
+  Serial.print(this->_wifi_client.localIP().toString());
+  Serial.print(F("(local), "));
+  Serial.print(this->_wifi_client.remoteIP().toString());
+  Serial.println(F("(remote)."));
   return true;
 }
 
-bool login_on_server()
+bool ConnectionClass::login_on_server()
 {
   HTTPClient http;
   // server preconnect
-  client.connect(API_DOMAIN, 80);
-  if (client.connected())
+  this->_wifi_client.connect(API_DOMAIN, API_PORT);
+  if (this->_wifi_client.connected())
   {
 
-    bool http_sucess_connection = http.begin(client, API_URL);
+    bool http_sucess_connection = http.begin(this->_wifi_client, API_URL);
     if (http_sucess_connection)
     {
       Serial.println(F("[API]: Connectado, enviando sinal "));
       http.addHeader("Content-Type", "application/json");
-      int http_status = http.POST(LOGIN_BODY(WiFi.macAddress()));
+      Serial.println(F("[API]: Esperando resposta..."));
+      int http_status = http.POST(LOGIN_BODY(WiFi.macAddress(), this->_wifi_client.localIP().toString()));
 
-      Serial.print(F("[API]: Esperando resposta"));
-      while (client.available())
-        Serial.print('.');
-      Serial.println();
+      // while (http.connected())
+      //   Serial.print('.');
+      // Serial.println();
 
-      if (http_status != -1 && http_status == 200)
-      {
-        Serial.println("[API Response]: \"" + http.getString() + "\"");
-      }
+      if (http_status == 200)
+        Serial.println("[API]: Response = \"" + http.getString() + "\"");
       else
       {
-        Serial.print(F("[API Error]: "));
+        Serial.print(F("[API]: Error, recived status = "));
         Serial.print(http_status);
+        Serial.print(", ");
+        Serial.println(http.errorToString(http_status));
         return false;
       }
       http.end();
@@ -189,7 +97,7 @@ bool login_on_server()
     }
     else
     {
-      Serial.println(F("[API]: Falha de conexão..."));
+      Serial.println(F("[Connection]: Falha de conexão..."));
       return false;
     }
   }
@@ -198,3 +106,86 @@ bool login_on_server()
     return false;
   }
 }
+
+bool ConnectionClass::add_callback(char *topic, void (*callback)(char *, uint8_t *, unsigned int))
+
+{
+  if (this->callbacks_length >= 10)
+    return false;
+  else
+  {
+    CallbackSelector selector;
+    selector.callback = callback;
+    // selector.topic = topic;
+    selector.topic = strcat(topic, ("@" + this->client_id).c_str());
+    this->callbacks[callbacks_length++] = selector;
+    this->subscribe(selector.topic);
+  }
+}
+
+void handle_callback_selector(char *topic, byte *message, uint32_t length)
+{
+  String _topic = topic;
+  if (_topic.indexOf(WiFi.macAddress()) < 0)
+    return;
+  for (uint8_t i = 0; i <= ConnectionClass::callbacks_length; i++)
+  {
+    if (_topic == ConnectionClass::callbacks[i].topic)
+    {
+      ConnectionClass::callbacks[i].callback(topic, message, length);
+      return;
+    }
+  }
+}
+
+void ConnectionClass::begin()
+{
+  this->setServer(API_DOMAIN, 1883);
+}
+
+void ConnectionClass::handle_reconnect()
+{
+  uint64_t time = millis();
+  while (!this->connected() && millis() - time <= 3e4)
+  {
+    Serial.print(F("[Connection]: Attempting MQTT connection..."));
+    // Attempt to connect
+    if (this->connect(WiFi.macAddress().c_str()))
+    {
+      Serial.println(F(" connected!"));
+      // Subscribe
+      for (uint8_t i; i <= 10; i++)
+      {
+        this->subscribe(ConnectionClass::callbacks[i].topic);
+      }
+      if (this->on_reconnect != nullptr)
+        this->on_reconnect();
+      return;
+    }
+    else
+    {
+      Serial.print(F(" failed, rc="));
+      Serial.println(this->state());
+      Serial.println(F("[Connection]: Trying again in 5 seconds"));
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+  Serial.println(F("[Connection]: Timeout exeeded, rebooting..."));
+  delayMicroseconds(800);
+  ESP.restart();
+}
+
+void ConnectionClass::set_on_reconnect(void (*cb)())
+{
+  this->on_reconnect = cb;
+}
+
+void ConnectionClass::loop()
+{
+  if (!this->connected())
+    this->handle_reconnect();
+  this->PubSubClient::loop();
+}
+
+ConnectionClass Connection = ConnectionClass();

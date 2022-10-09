@@ -105,7 +105,7 @@ bool NFCTag::get_nfc_tag(String &tag)
     for (int i = 0; i < mfrc522.uid.size; i++)
     {
       char buff[5]; // 3 digits, dash and \0.
-      snprintf(buff, sizeof(buff), "%s%d", i ? "-" : "", mfrc522.uid.uidByte[i]);
+      snprintf(buff, sizeof(buff), "%s%02X", i ? ":" : "", mfrc522.uid.uidByte[i]);
       tag += buff;
     };
 

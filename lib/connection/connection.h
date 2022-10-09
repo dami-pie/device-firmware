@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <PubSubClient.h>
 #include <HTTPClient.h>
 #include "connection_conf.h"
 
@@ -10,26 +11,49 @@
 #include <esp_wpa2.h>
 #include <esp_wifi.h>
 #endif
-#define LOGIN_BODY(mac) ("{ \"mac\": \"" + mac + "\", \"ip\": \"" + SERVER_IP + "\" }")
+#define LOGIN_BODY(mac, ip) ("{ \"mac\": \"" + mac + "\", \"ip\": \"" + ip + "\" }")
 
-extern WiFiServer server;
-extern WiFiClient client;
-static String SERVER_IP;
-extern TaskHandle_t server_task_handle;
+typedef struct
+{
+  char *topic;
+  void (*callback)(char *, uint8_t *, unsigned int);
+} CallbackSelector;
 
-void response(WiFiClient client, int status, const char *body);
-void response(WiFiClient client, int status);
-void response(WiFiClient client);
-void response();
+extern WiFiClientSecure wifi_client;
+void handle_callback_selector(char *topic, byte *message, uint32_t length);
 
-String getRequest(WiFiClient client);
-String getRequest();
+// extern WiFiServer server;
+// std::function<void(char *, uint8_t *, unsigned int)> callback get_callback(ConnectionClass cls);
+class ConnectionClass : public PubSubClient
+{
+private:
+  WiFiClientSecure _wifi_client;
+  void handle_reconnect();
+  void (*on_reconnect)();
+  String client_id;
+  // TaskHandle_t connection_handle;
+  // MQTT_CALLBACK_SIGNATURE;
+  // xTaskCreate(
+  //     handle,             /* Task function. */
+  //     pcName,             /* name of task. */
+  //     20480,              /* Stack size of task in bytes (20Kb)*/
+  //     &server,            /* parameter of the task */
+  //     1,                  /* priority of the task */
+  //     &server_task_handle /* Task handle to keep track of created task */
+  // );
+public:
+  static uint8_t callbacks_length;
+  static CallbackSelector callbacks[10];
 
-bool login_on_server();
-
-bool setup_wifi();
-
-void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port);
-void setup_server(TaskFunction_t handle, const char *pcName);
-
+  ConnectionClass();
+  ConnectionClass(WiFiClientSecure client);
+  // ~ConnectionClass();
+  void set_on_reconnect(void (*cb)());
+  bool login_on_server();
+  bool setup_wifi();
+  bool add_callback(char *topic, void (*callback)(char *, uint8_t *, unsigned int));
+  void begin();
+  void loop();
+};
+extern ConnectionClass Connection;
 #endif

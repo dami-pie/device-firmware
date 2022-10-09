@@ -1,6 +1,7 @@
 #include "screen.h"
 #include <Arduino.h>
 #include <WiFi.h>
+#include <PubSubClient.h>
 #include "connection.h"
 #include "otp.h"
 #include "pitches.h"
@@ -17,11 +18,24 @@
   delay(time);                      \
   ledcWriteTone(sound_channel, 0)
 
+#define open_success()                \
+  digitalWrite(DOOR_PIN, HIGH);       \
+  Serial.println(F("PORTA ABERTA!")); \
+  beep(40, 310);                      \
+  digitalWrite(DOOR_PIN, LOW);        \
+  Serial.println(F("PORTA FECHADA!"))
+
+#define open_denied() \
+  beep(20, 310);      \
+  delay(200);         \
+  beep(20, 310)
 bool connection_setup_success;
 bool is_door_open = false;
 
-void handle_open_door(void *p);
 void handle_scan_card();
+void handle_open_door(char *topic, byte *message, uint32_t length);
+void handle_new_card(char *topic, byte *message, uint32_t length);
+
 bool request_nfc_access(String client_id);
 
 static uint8_t sound_channel;
@@ -45,20 +59,26 @@ void setup(void)
   lv_label_set_text(ui_DateLabel1, "00/00/0000");
   lv_timer_handler();
 
-  connection_setup_success = setup_wifi(); // && login_on_server();
+  connection_setup_success = Connection.setup_wifi(); // && login_on_server();
+  // Connection.login_on_server();
+  Connection.add_callback("open", handle_open_door);
+  Connection.add_callback("register", handle_new_card);
+  Connection.begin();
   door_code.begin(1);
-  setup_server(handle_open_door, "server_request");
 }
 
 void loop()
 {
+
   codeUpdate(door_code.otp_code);
   lv_label_set_text(ui_WifiLabel, wifi_status_icon());
   getUpdate();
   lv_timer_handler();
   delay(1000);
   if (WiFi.status() != WL_CONNECTED)
-    WiFi.reconnect() || setup_wifi();
+    WiFi.reconnect() || Connection.setup_wifi();
+  else
+    Connection.loop();
 }
 
 bool request_nfc_access(String client_id)
@@ -68,12 +88,11 @@ bool request_nfc_access(String client_id)
 
 #if API_PROTOCOL == HTTPS
   WiFiClientSecure client;
-  HTTPClient http;
   client.setInsecure();
 #else
   WiFiClient client;
-  HTTPClient http;
 #endif
+  HTTPClient http;
 
   client.connect(API_URL, API_PORT);
 
@@ -94,57 +113,39 @@ void handle_scan_card()
   if (Tag.get_nfc_tag(nfc_tag) && request_nfc_access(nfc_tag))
   {
     yield();
-    digitalWrite(DOOR_PIN, HIGH);
-    Serial.println(F("PORTA ABERTA!"));
-    beep(40, 310);
-    digitalWrite(DOOR_PIN, LOW);
-    Serial.println(F("PORTA FECHADA!"));
+    open_success();
   }
   else
   {
-    beep(20, 310);
-    delay(200);
-    beep(20, 310);
+    open_denied();
   }
 }
 
-void handle_open_door(void *p)
+void handle_open_door(char *topic, byte *message, uint32_t length)
 {
-  delay(100);
-  for (;;)
+  if (String((char *)message).indexOf("secret") >= 0)
   {
-    delayMicroseconds(60);
-    Tag.loop();
-    WiFiClient client = server.available();
-    if (client)
-    {
-      String request = getRequest(client);
-      if (request.length() > 20)
-      {
-        Serial.println(request);
-        yield();
-        if (request.indexOf("POST /card") >= 0)
-        {
-          String nfc_tag;
-          response(client, Tag.get_nfc_tag(nfc_tag) ? 200 : 500, ("{ \"nfc_tag\": \"" + nfc_tag + "\"}").c_str());
-        }
-        else
-        {
-          response(client);
-          digitalWrite(DOOR_PIN, HIGH);
-          Serial.println(F("PORTA ABERTA!"));
-          beep(40, 310);
-          digitalWrite(DOOR_PIN, LOW);
-          Serial.println(F("PORTA FECHADA!"));
-        }
-      }
-      else
-      {
-        response(client, 400);
-        beep(20, 310);
-        delay(200);
-        beep(20, 310);
-      }
-    }
+    open_success();
+  }
+  else
+  {
+    open_denied();
+  }
+}
+
+void handle_new_card(char *topic, byte *message, uint32_t length)
+{
+  if (String((char *)message).indexOf("secret") < 0)
+    return;
+  String nfc_tag;
+  if (Tag.get_nfc_tag(nfc_tag))
+  {
+    nfc_tag += "@";
+    nfc_tag += WiFi.macAddress();
+    Connection.publish("new_card", nfc_tag.c_str());
+  }
+  else
+  {
+    open_denied();
   }
 }
