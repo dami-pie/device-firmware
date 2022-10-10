@@ -31,13 +31,16 @@ void response(WiFiClient client, int status)
 {
   Serial.print(F("HTTP/1.1 "));
   Serial.println(status);
-  client.print("HTTP/1.1 ");
-  client.println(status);
   Serial.println(F("Content-type: text/html"));
-  client.println("Content-type: text/html");
   Serial.println(F("Connection: close"));
-  client.println("Connection: close");
   Serial.println();
+
+  String res = "HTTP/1.1 " + String(status) + "\nContent-type: text/html\nConnection: close\n\r\n\r";
+
+  byte *buff = new byte[res.length()];
+  Secure.encrypt((byte *)res.c_str(), buff);
+  client.write(buff, sizeof(buff));
+  delete[] buff;
   client.stop();
 }
 
@@ -84,6 +87,14 @@ String getRequest(WiFiClient client)
       }
       else
       {
+        if (request.length())
+        {
+          byte *buff = new byte[request.length()];
+          if (Secure.decrypt((byte *)request.c_str(), buff) > 0)
+            request = (char *)buff;
+          delete[] buff;
+        }
+
         break;
       }
     }

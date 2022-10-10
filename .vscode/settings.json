@@ -17,7 +17,8 @@
         "wificlient.h": "c",
         "cstring": "cpp",
         "ui.h": "c",
-        "functional": "cpp"
+        "functional": "cpp",
+        "openssl_server.h": "c"
     },
     "python.formatting.provider": "yapf"
 }

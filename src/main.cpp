@@ -26,7 +26,12 @@ bool request_nfc_access(String client_id);
 
 static uint8_t sound_channel;
 uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
-OTP door_code("door_otp", key, 500);
+OTP door_code;
+
+byte *getLocalIP()
+{
+  return &(WiFi.localIP()[0]);
+}
 
 void setup(void)
 {
@@ -46,6 +51,8 @@ void setup(void)
   lv_timer_handler();
 
   connection_setup_success = setup_wifi(); // && login_on_server();
+
+  door_code = OTP("door_otp", getLocalIP(), 500);
   door_code.begin(1);
   setup_server(handle_open_door, "server_request");
 }

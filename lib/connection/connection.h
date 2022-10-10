@@ -5,11 +5,11 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "connection_conf.h"
-
-#if WIFI_PROTOCOL == EAPE
+#include "crypto.h"
+// #if WIFI_PROTOCOL == EAPE
 #include <esp_wpa2.h>
 #include <esp_wifi.h>
-#endif
+// #endif
 #define LOGIN_BODY(mac) ("{ \"mac\": \"" + mac + "\", \"ip\": \"" + SERVER_IP + "\" }")
 
 extern WiFiServer server;
