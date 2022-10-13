@@ -121,9 +121,9 @@ void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
 bool setup_wifi()
 {
   WiFi.disconnect(true); // disconnect form wifi to set new wifi connection
-  WiFi.mode(WIFI_STA);   // init wifi mode
 
 #if WIFI_PROTOCOL == EAPE
+  WiFi.mode(WIFI_STA); // init wifi mode
   esp_wifi_sta_wpa2_ent_set_username(WIFI_USERNAME, sizeof(WIFI_USERNAME));
   esp_wifi_sta_wpa2_ent_set_password(WIFI_PASSWORD, sizeof(WIFI_PASSWORD));
   esp_wifi_sta_wpa2_ent_enable();

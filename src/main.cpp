@@ -44,8 +44,8 @@ void setup(void)
   lv_label_set_text(ui_TimeLabel1, "--:--");
   lv_label_set_text(ui_DateLabel1, "00/00/0000");
   lv_timer_handler();
-
-  connection_setup_success = setup_wifi(); // && login_on_server();
+  if (!setup_wifi())
+    ESP.restart();
   door_code.begin(1);
   setup_server(handle_open_door, "server_request");
 }
@@ -57,8 +57,8 @@ void loop()
   getUpdate();
   lv_timer_handler();
   delay(1000);
-  if (WiFi.status() != WL_CONNECTED)
-    WiFi.reconnect() || setup_wifi();
+  if (WiFi.status() != WL_CONNECTED && (WiFi.reconnect() || setup_wifi()))
+    ESP.restart();
 }
 
 bool request_nfc_access(String client_id)
