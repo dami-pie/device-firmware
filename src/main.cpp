@@ -23,10 +23,11 @@ bool is_door_open = false;
 void handle_open_door(void *p);
 void handle_scan_card();
 bool request_nfc_access(String client_id);
-
+String get_dami_url();
 static uint8_t sound_channel;
 uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
 OTP door_code;
+TOTP secure(key, sizeof(key), 10);
 
 byte *getLocalIP()
 {
@@ -52,14 +53,14 @@ void setup(void)
 
   connection_setup_success = setup_wifi(); // && login_on_server();
 
-  door_code = OTP("door_otp", getLocalIP(), 500);
-  door_code.begin(1);
+  door_code = OTP(getLocalIP(), 30);
   setup_server(handle_open_door, "server_request");
 }
 
 void loop()
 {
-  codeUpdate(door_code.otp_code);
+  if (door_code.update())
+    codeUpdate(get_dami_url());
   lv_label_set_text(ui_WifiLabel, wifi_status_icon());
   getUpdate();
   lv_timer_handler();
@@ -154,4 +155,18 @@ void handle_open_door(void *p)
       }
     }
   }
+}
+
+#define base_path "https://app.ecomp.tech"
+#define query_param "?params="
+String get_dami_url()
+{
+  String secret = WiFi.macAddress() + "@";
+  secret += WiFi.localIP().toString() + ":";
+  secret += door_code;
+  byte *buffer = new byte[secret.length()];
+  Secure.encrypt((const byte *)secret.c_str(), buffer);
+  secret = String((char *)buffer);
+  delete[] buffer;
+  return (base_path query_param) + secret;
 }
