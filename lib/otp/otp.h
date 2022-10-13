@@ -2,9 +2,7 @@
 #define _OTPCODE_H
 
 #include <TOTP.h>
-#include <time.h>
-// #include <NTPClient.h>
-// #include <WiFiUdp.h>
+#include <ntpTime.h>
 
 #define NTP_SERVER "pool.ntp.br"
 
@@ -20,21 +18,24 @@ extern struct tm timeinfo;
 class OTP : public TOTP
 {
 private:
-  const char *name;
-  bool updating;
   uint8_t *hmacKey;
-  void handle_update(void *p);
+  uint32_t ms;
+  bool updated;
+  static bool updating;
 
 public:
+  static struct tm timeinfo;
   String otp_code;
-  TaskHandle_t task_handle;
   int update_timeout;
-  OTP(const char *_name, uint8_t *_hmacKey, int update_timeout);
+
+  OTP(uint8_t *_hmacKey, int update_timeout);
+  OTP(uint8_t *_hmacKey);
   ~OTP();
-  void begin(UBaseType_t uxPriority);
-  void stop();
-  void update();
-  bool is_updating();
+  void begin();
+  bool update();
+  bool OTP::is_updating() { return OTP::updating; };
+  bool OTP::is_updated() { return this->updated; };
+  operator String() { return otp_code; }
 };
 
 #endif

@@ -26,7 +26,7 @@ bool request_nfc_access(String client_id);
 
 static uint8_t sound_channel;
 uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
-OTP door_code("door_otp", key, 500);
+OTP door_code(key);
 
 void setup(void)
 {
@@ -46,13 +46,14 @@ void setup(void)
   lv_timer_handler();
   if (!setup_wifi())
     ESP.restart();
-  door_code.begin(1);
   setup_server(handle_open_door, "server_request");
 }
 
 void loop()
 {
-  codeUpdate(door_code.otp_code);
+  yield();
+  if (door_code.update())
+    codeUpdate(door_code);
   lv_label_set_text(ui_WifiLabel, wifi_status_icon());
   getUpdate();
   lv_timer_handler();
