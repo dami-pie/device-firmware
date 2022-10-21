@@ -1,6 +1,7 @@
 #include "otp.h"
 
 tm OTP::timeinfo = timeInfo;
+bool OTP::updating = false;
 
 OTP::OTP(uint8_t *_hmacKey, int update_timeout) : TOTP(_hmacKey, sizeof(_hmacKey), update_timeout)
 {

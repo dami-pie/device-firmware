@@ -5,147 +5,70 @@
 #include "otp.h"
 #include "pitches.h"
 #include "RFID.h"
+#include "crypto.h"
 
-#define DOOR_PIN 4
-#define BUZZER_PIN 2
+#include "mbedtls/aes.h"
 
-#define wifi_status_icon() (WiFi.status() == WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE)
-
-// #define beep(hz) (ledcWriteTone(sound_channel, hz))
-#define beep(hz, time)              \
-  ledcWriteTone(sound_channel, hz); \
-  delay(time);                      \
-  ledcWriteTone(sound_channel, 0)
-
-bool connection_setup_success;
-bool is_door_open = false;
-
-void handle_open_door(void *p);
-void handle_scan_card();
-bool request_nfc_access(String client_id);
-
-static uint8_t sound_channel;
-uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
-OTP door_code(key);
-
-void setup(void)
+void encrypt(char *plainText, char *key, unsigned char *outputBuffer)
 {
 
-  Serial.begin(115200); /* prepare for possible serial debug */
-  Serial.setDebugOutput(true);
+  mbedtls_aes_context aes;
 
-  pinMode(DOOR_PIN, OUTPUT);
-  ledcAttachPin(BUZZER_PIN, sound_channel);
-  setup_screen();
-  delay(2000);
-  Tag.begin(handle_scan_card);
-  lv_label_set_text(ui_WifiLabel, LV_SYMBOL_CLOSE);
-  codeUpdate(" ");
-  lv_label_set_text(ui_TimeLabel1, "--:--");
-  lv_label_set_text(ui_DateLabel1, "00/00/0000");
-  lv_timer_handler();
-  if (!setup_wifi())
-    ESP.restart();
-  setup_server(handle_open_door, "server_request");
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_enc(&aes, (const unsigned char *)key, strlen(key) * 8);
+  mbedtls_aes_crypt_ecb(&aes, ENCRYPT, (const unsigned char *)plainText, outputBuffer);
+  mbedtls_aes_free(&aes);
 }
 
-void loop()
+void decrypt(unsigned char *chipherText, char *key, unsigned char *outputBuffer)
 {
-  yield();
-  if (door_code.update())
-    codeUpdate(door_code);
-  lv_label_set_text(ui_WifiLabel, wifi_status_icon());
-  getUpdate();
-  lv_timer_handler();
-  delay(1000);
-  if (WiFi.status() != WL_CONNECTED && (WiFi.reconnect() || setup_wifi()))
-    ESP.restart();
+
+  mbedtls_aes_context aes;
+
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_dec(&aes, (const unsigned char *)key, strlen(key) * 8);
+  mbedtls_aes_crypt_ecb(&aes, DECRYPT, (const unsigned char *)chipherText, outputBuffer);
+  mbedtls_aes_free(&aes);
 }
 
-bool request_nfc_access(String client_id)
+void setup()
 {
-  if ((WiFi.status() != WL_CONNECTED))
-    return false;
 
-#if API_PROTOCOL == HTTPS
-  WiFiClientSecure client;
-  HTTPClient http;
-  client.setInsecure();
-#else
-  WiFiClient client;
-  HTTPClient http;
-#endif
+  Serial.begin(115200);
 
-  client.connect(API_URL, API_PORT);
+  char *key = "00Qd2s8E3WtVwKCP8WHr7JrPY8oaaX2rKTXUOUHc8o";
+  Secure.load_key(key);
 
-  if (http.begin(client, (API_URL "/auth_card")))
-  {
-    int httpCode = http.POST(client_id);
-    http.end();
-    return httpCode == 200;
-  }
+  char *plainText = "Techtutorialaaa";
+  String cipherTextOutput;
+  String decipheredTextOutput;
 
-  return false;
+  Secure.encrypt(plainText, cipherTextOutput);
+
+  Serial.println("\nOriginal plain text:");
+  Serial.println(plainText);
+
+  Serial.println("\nCiphered text: ");
+  Serial.println(cipherTextOutput);
+  delay(10);
+  cipherTextOutput.replace("EOF", "");
+
+  Secure.decrypt((byte *)cipherTextOutput.c_str(), decipheredTextOutput);
+  // for (int i = 0; i < 16; i++)
+  // {
+
+  //   char str[3];
+
+  //   sprintf(str, "%02x", (int)cipherTextOutput[i]);
+  //   Serial.print(str);
+  // }
+
+  Serial.println("\n\nDeciphered text:");
+  Serial.println(decipheredTextOutput);
+  // for (int i = 0; i < sizeof(decipheredTextOutput); i++)
+  // {
+  //   Serial.print((char)decipheredTextOutput[i]);
+  // }
 }
 
-void handle_scan_card()
-{
-  yield();
-  String nfc_tag;
-  if (Tag.get_nfc_tag(nfc_tag) && request_nfc_access(nfc_tag))
-  {
-    yield();
-    digitalWrite(DOOR_PIN, HIGH);
-    Serial.println(F("PORTA ABERTA!"));
-    beep(40, 310);
-    digitalWrite(DOOR_PIN, LOW);
-    Serial.println(F("PORTA FECHADA!"));
-  }
-  else
-  {
-    beep(20, 310);
-    delay(200);
-    beep(20, 310);
-  }
-}
-
-void handle_open_door(void *p)
-{
-  delay(100);
-  for (;;)
-  {
-    delayMicroseconds(60);
-    Tag.loop();
-    WiFiClient client = server.available();
-    if (client)
-    {
-      String request = getRequest(client);
-      if (request.length() > 20)
-      {
-        Serial.println(request);
-        yield();
-        if (request.indexOf("POST /card") >= 0)
-        {
-          String nfc_tag;
-          response(client, Tag.get_nfc_tag(nfc_tag) ? 200 : 500, ("{ \"nfc_tag\": \"" + nfc_tag + "\"}").c_str());
-        }
-        else
-        {
-          response(client);
-          digitalWrite(DOOR_PIN, HIGH);
-          Serial.println(F("PORTA ABERTA!"));
-          beep(40, 310);
-          digitalWrite(DOOR_PIN, LOW);
-          Serial.println(F("PORTA FECHADA!"));
-        }
-      }
-      else
-      {
-        response(client, 400);
-        beep(20, 310);
-        delay(200);
-        beep(20, 310);
-      }
-    }
-  }
-}
+void loop() {}

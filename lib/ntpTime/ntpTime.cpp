@@ -10,6 +10,18 @@ void timer__begin(long gmtOffSet, int dayLightOffSet, String ntpServer)
         Serial.println(F("[NTP]: erro on load data"));
     }
 }
+void timer__begin(long gmtOffSet, int dayLightOffSet)
+{
+    timer__begin(gmtOffSet, dayLightOffSet, NTP_SERVER_1);
+}
+void timer__begin(long gmtOffSet)
+{
+    timer__begin(gmtOffSet, 0);
+}
+void timer__begin()
+{
+    timer__begin(0);
+}
 
 String timeUpdate()
 {

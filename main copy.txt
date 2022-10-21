@@ -1,0 +1,215 @@
+#include "screen.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#include "connection.h"
+#include "otp.h"
+#include "pitches.h"
+#include "RFID.h"
+#include "crypto.h"
+
+#define DOOR_PIN 4
+#define BUZZER_PIN 2
+
+#define wifi_status_icon() (WiFi.status() == WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE)
+
+// #define beep(hz) (ledcWriteTone(sound_channel, hz))
+#define beep(hz, time)              \
+  ledcWriteTone(sound_channel, hz); \
+  delay(time);                      \
+  ledcWriteTone(sound_channel, 0)
+
+bool connection_setup_success;
+bool is_door_open = false;
+
+void handle_open_door(void *p);
+void handle_scan_card();
+bool request_nfc_access(String client_id);
+String get_dami_url();
+
+static uint8_t sound_channel;
+uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
+OTP door_code(key);
+
+void setup(void)
+{
+
+  Serial.begin(115200); /* prepare for possible serial debug */
+  Serial.setDebugOutput(true);
+
+  pinMode(DOOR_PIN, OUTPUT);
+  ledcAttachPin(BUZZER_PIN, sound_channel);
+  setup_screen();
+  Tag.begin(handle_scan_card);
+  Secure.load_key((byte *)("dsdiofsoiduf"));
+
+  lv_label_set_text(ui_WifiLabel, LV_SYMBOL_CLOSE);
+  codeUpdate(" ");
+  lv_label_set_text(ui_TimeLabel1, "--:--");
+  lv_label_set_text(ui_DateLabel1, "00/00/0000");
+  lv_timer_handler();
+  if (!setup_wifi())
+    ESP.restart();
+  setup_server(handle_open_door, "server_request");
+}
+
+void loop()
+{
+  yield();
+  if (door_code.update())
+    codeUpdate(get_dami_url());
+  lv_label_set_text(ui_WifiLabel, wifi_status_icon());
+  getUpdate();
+  lv_timer_handler();
+  delay(1000);
+  if (WiFi.status() != WL_CONNECTED && (WiFi.reconnect() || setup_wifi()))
+    ESP.restart();
+}
+
+bool request_nfc_access(String client_id)
+{
+  if ((WiFi.status() != WL_CONNECTED))
+    return false;
+
+#if API_PROTOCOL == HTTPS
+  WiFiClientSecure client;
+  HTTPClient http;
+  client.setInsecure();
+#else
+  WiFiClient client;
+  HTTPClient http;
+#endif
+
+  client.connect(API_URL, API_PORT);
+
+  if (http.begin(client, (API_URL "/auth_card")))
+  {
+    int httpCode = http.POST(client_id);
+    http.end();
+    return httpCode == 200;
+  }
+
+  return false;
+}
+
+void handle_scan_card()
+{
+  yield();
+  String nfc_tag;
+  if (Tag.get_nfc_tag(nfc_tag) && request_nfc_access(nfc_tag))
+  {
+    yield();
+    digitalWrite(DOOR_PIN, HIGH);
+    Serial.println(F("PORTA ABERTA!"));
+    beep(40, 310);
+    digitalWrite(DOOR_PIN, LOW);
+    Serial.println(F("PORTA FECHADA!"));
+  }
+  else
+  {
+    beep(20, 310);
+    delay(200);
+    beep(20, 310);
+  }
+}
+
+void handle_open_door(void *p)
+{
+  delay(100);
+  for (;;)
+  {
+    delayMicroseconds(60);
+    Tag.loop();
+    WiFiClient client = server.available();
+    if (client)
+    {
+      String request = getRequest(client);
+      if (request.length() > 20)
+      {
+        Serial.println(request);
+        yield();
+        if (request.indexOf("POST /card") >= 0)
+        {
+          String nfc_tag;
+          response(client, Tag.get_nfc_tag(nfc_tag) ? 200 : 500, ("{ \"nfc_tag\": \"" + nfc_tag + "\"}").c_str());
+        }
+        else
+        {
+          response(client);
+          digitalWrite(DOOR_PIN, HIGH);
+          Serial.println(F("PORTA ABERTA!"));
+          beep(40, 310);
+          digitalWrite(DOOR_PIN, LOW);
+          Serial.println(F("PORTA FECHADA!"));
+        }
+      }
+      else
+      {
+        response(client, 400);
+        beep(20, 310);
+        delay(200);
+        beep(20, 310);
+      }
+    }
+  }
+}
+
+String urlencode(String str)
+{
+  String encodedString = "";
+  char c;
+  char code0;
+  char code1;
+  char code2;
+  for (int i = 0; i < str.length(); i++)
+  {
+    c = str.charAt(i);
+    if (c == ' ')
+    {
+      encodedString += '+';
+    }
+    else if (isalnum(c))
+    {
+      encodedString += c;
+    }
+    else
+    {
+      code1 = (c & 0xf) + '0';
+      if ((c & 0xf) > 9)
+      {
+        code1 = (c & 0xf) - 10 + 'A';
+      }
+      c = (c >> 4) & 0xf;
+      code0 = c + '0';
+      if (c > 9)
+      {
+        code0 = c - 10 + 'A';
+      }
+      code2 = '\0';
+      encodedString += '%';
+      encodedString += code0;
+      encodedString += code1;
+      // encodedString+=code2;
+    }
+    yield();
+  }
+  return encodedString;
+}
+
+#define base_path "https://app.ecomp.tech"
+#define query_param "?params="
+String get_dami_url()
+{
+  // String secret = WiFi.macAddress() + "@";
+  // secret += WiFi.localIP().toString() + ":";
+  // secret += door_code;
+  String secret = door_code;
+  byte *buffer = new byte[secret.length() * 2];
+  if (Secure.encrypt((const byte *)secret.c_str(), buffer) > 0)
+  {
+    yield();
+    secret = String((char *)buffer);
+    Serial.println((char *)buffer);
+    // delete[] buffer;
+  }
+  return (base_path query_param) + secret;
+}

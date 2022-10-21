@@ -35,6 +35,9 @@ void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 void codeUpdate(String code)
 {
+  Serial.print("[QR]: updated code to \"");
+  Serial.print(code);
+  Serial.println('"');
   lv_qrcode_update(ui_QRCodeLogin, code.c_str(), code.length());
 }
 

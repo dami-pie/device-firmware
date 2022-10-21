@@ -17,7 +17,10 @@
         "wificlient.h": "c",
         "cstring": "cpp",
         "ui.h": "c",
-        "functional": "cpp"
+        "functional": "cpp",
+        "cmath": "cpp",
+        "*.tcc": "cpp",
+        "chrono": "cpp"
     },
     "python.formatting.provider": "yapf"
 }

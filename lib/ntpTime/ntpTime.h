@@ -6,7 +6,10 @@
 
 extern struct tm timeInfo;
 
-void timer__begin(long gmtOffSet = 0, int dayLightOffSet = 0, String ntpServer = NTP_SERVER_2);
+void timer__begin(long gmtOffSet, int dayLightOffSet, String ntpServer);
+void timer__begin(long gmtOffSet, int dayLightOffSet);
+void timer__begin(long gmtOffSet);
+void timer__begin();
 
 String timeUpdate();
 

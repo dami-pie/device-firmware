@@ -33,8 +33,8 @@ public:
   ~OTP();
   void begin();
   bool update();
-  bool OTP::is_updating() { return OTP::updating; };
-  bool OTP::is_updated() { return this->updated; };
+  bool is_updating() { return OTP::updating; };
+  bool is_updated() { return this->updated; };
   operator String() { return otp_code; }
 };
 
