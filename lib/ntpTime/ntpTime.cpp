@@ -11,22 +11,13 @@ void timer__begin(long gmtOffSet, int dayLightOffSet, String ntpServer)
     }
 }
 
-String timeUpdate()
-{
+std::tuple<String, String> timeUpdate() {
     char time[6];
-    if (!getLocalTime(&timeInfo))
-        strcat(time, "--:--");
-    else
-        strftime(time, 6, "%R", &timeInfo);
-    return time;
-}
-
-String dateUpdate()
-{
     char date[11];
-    if (!getLocalTime(&timeInfo))
-        strcat(date, "--/--/----");
-    else
-        strftime(date, 11, "%d/%m/%Y", &timeInfo);
-    return date;
+    if (getLocalTime(&timeInfo))
+    {
+        strftime(time, sizeof(time), "%R", &timeInfo);
+        strftime(date, sizeof(date), "%d/%m/%Y", &timeInfo);
+    }
+    return std::make_tuple(time, date);
 }

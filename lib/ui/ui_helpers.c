@@ -1,6 +1,6 @@
 // SquareLine LVGL GENERATED FILE
-// EDITOR VERSION: SquareLine Studio 1.0.5
-// LVGL VERSION: 8.2
+// EDITOR VERSION: SquareLine Studio 1.2.0
+// LVGL VERSION: 8.2.0
 // PROJECT: PT3
 
 #include "ui_helpers.h"
@@ -54,19 +54,29 @@ void _ui_screen_change(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, 
     lv_scr_load_anim(target, fademode, spd, delay, false);
 }
 
-void _ui_arc_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay)
+void _ui_arc_increment(lv_obj_t * target, int val)
 {
-    lv_scr_load_anim(target, fademode, spd, delay, false);
+    int old = lv_arc_get_value(target);
+    lv_arc_set_value(target, old + val);
+    lv_event_send(target, LV_EVENT_VALUE_CHANGED, 0);
 }
 
-void _ui_bar_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay)
+void _ui_bar_increment(lv_obj_t * target, int val, int anm)
 {
-    lv_scr_load_anim(target, fademode, spd, delay, false);
+    int old = lv_bar_get_value(target);
+    lv_bar_set_value(target, old + val, anm);
 }
 
-void _ui_slider_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay)
+void _ui_slider_increment(lv_obj_t * target, int val, int anm)
 {
-    lv_scr_load_anim(target, fademode, spd, delay, false);
+    int old = lv_slider_get_value(target);
+    lv_slider_set_value(target, old + val, anm);
+    lv_event_send(target, LV_EVENT_VALUE_CHANGED, 0);
+}
+
+void _ui_keyboard_set_target(lv_obj_t * keyboard, lv_obj_t * textarea)
+{
+    lv_keyboard_set_textarea(keyboard, textarea);
 }
 
 void _ui_flag_modify(lv_obj_t * target, int32_t flag, int value)
@@ -182,5 +192,3 @@ void _ui_checked_set_text_value(lv_obj_t * trg, lv_obj_t * src, char * txt_on, c
     if(lv_obj_has_state(src, LV_STATE_CHECKED)) lv_label_set_text(trg, txt_on);
     else lv_label_set_text(trg, txt_off);
 }
-
-

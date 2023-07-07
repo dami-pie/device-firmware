@@ -8,6 +8,4 @@ extern struct tm timeInfo;
 
 void timer__begin(long gmtOffSet = 0, int dayLightOffSet = 0, String ntpServer = NTP_SERVER_2);
 
-String timeUpdate();
-
-String dateUpdate();
+std::tuple<String, String> timeUpdate();

@@ -5,6 +5,9 @@
 #include "otp.h"
 #include "pitches.h"
 
+#define GREEN_COLOR 0x9DF393
+#define BROWN_COLOR 0xF4B896
+
 #define DOOR_PIN 4
 #define BUZZER_PIN 2
 #define await(condition) \
@@ -39,12 +42,13 @@ void setup(void)
   Serial.println();
   pinMode(DOOR_PIN, OUTPUT);
   ledcAttachPin(BUZZER_PIN, sound_channel);
-
   setup_screen();
-  lv_label_set_text(ui_WifiLabel, LV_SYMBOL_CLOSE);
+  lv_label_set_text(ui_WifiLabel, LV_SYMBOL_REFRESH "\tConectando");
+  lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
   codeUpdate(" ");
-  lv_label_set_text(ui_TimeLabel1, "--:--");
-  lv_label_set_text(ui_DateLabel1, "00/00/0000");
+  lv_obj_add_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
   lv_timer_handler();
 
   connection_setup_success = setup_wifi(); // && login_on_server();
@@ -86,13 +90,25 @@ void handle_open_door(void *p)
 void loop()
 {
   codeUpdate(door_code.otp_code);
-  lv_label_set_text(ui_WifiLabel,
-                    (WiFi.status() == WL_CONNECTED ? LV_SYMBOL_WIFI : LV_SYMBOL_CLOSE));
   getUpdate();
-  lv_timer_handler();
-  delay(1000);
-  if (WiFi.status() != WL_CONNECTED)
+  switch (WiFi.status())
   {
+  case WL_CONNECTED:
+    lv_label_set_text(ui_WifiLabel, LV_SYMBOL_WIFI "\tConectado");
+    lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(GREEN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(GREEN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_clear_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
+    break;
+
+  default:
+    lv_label_set_text(ui_WifiLabel, LV_SYMBOL_CLOSE "\tDesconectado");
+    lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
     WiFi.reconnect() || setup_wifi();
   }
+  lv_timer_handler();
+  delay(1000);
 }
