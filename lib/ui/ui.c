@@ -12,14 +12,14 @@
 #include "ui_helpers.h"
 
 ///////////////////// VARIABLES ////////////////////
-lv_obj_t * ui_LoginScreen;
-lv_obj_t * ui_EcompLogo;
-lv_obj_t * ui_LoginLabel;
-lv_obj_t * ui_QRCodeLogin;
-lv_obj_t * ui_WifiPanel;
-lv_obj_t * ui_WifiLabel;
-lv_obj_t * ui_TimeLabel;
-lv_obj_t * ui_DateLabel;
+lv_obj_t *ui_LoginScreen;
+lv_obj_t *ui_EcompLogo;
+lv_obj_t *ui_LoginLabel;
+lv_obj_t *ui_QRCodeLogin;
+lv_obj_t *ui_WifiPanel;
+lv_obj_t *ui_WifiLabel;
+lv_obj_t *ui_TimeLabel;
+lv_obj_t *ui_DateLabel;
 
 ///////////////////// SCREENS ////////////////////
 void ui_LoginScreen_screen_init(void)
@@ -90,15 +90,14 @@ void ui_LoginScreen_screen_init(void)
   lv_obj_set_x(ui_DateLabel, -16);
   lv_obj_set_y(ui_DateLabel, -16);
   lv_obj_set_align(ui_DateLabel, LV_ALIGN_BOTTOM_RIGHT);
-
 }
 
 void ui_init(void)
 {
-    lv_disp_t * dispp = lv_disp_get_default();
-    lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
-                                               false, LV_FONT_DEFAULT);
-    lv_disp_set_theme(dispp, theme);
-    ui_LoginScreen_screen_init();
-    lv_disp_load_scr(ui_LoginScreen);
+  lv_disp_t *dispp = lv_disp_get_default();
+  lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
+                                            false, LV_FONT_DEFAULT);
+  lv_disp_set_theme(dispp, theme);
+  ui_LoginScreen_screen_init();
+  lv_disp_load_scr(ui_LoginScreen);
 }

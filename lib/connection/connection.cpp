@@ -1,111 +1,75 @@
 #include "connection.h"
 
-WiFiServer server;
 WiFiClient client;
-TaskHandle_t server_task_handle;
+PubSubClient mqtt_client(client);
 
-void response(WiFiClient client, int status)
+// TaskHandle_t server_task_handle;
+File load_file(const char *file_path)
 {
-  Serial.print("HTTP/1.1 ");
-  Serial.println(status);
-  client.print("HTTP/1.1 ");
-  client.println(status);
-  Serial.println("Content-type: text/html");
-  client.println("Content-type: text/html");
-  Serial.println("Connection: close");
-  client.println("Connection: close");
-  Serial.println();
-  client.stop();
-}
-
-void response(WiFiClient client)
-{
-  response(client, 200);
-}
-
-void response()
-{
-  response(client, 200);
-}
-
-String getRequest()
-{
-  return getRequest(client);
-}
-
-String getRequest(WiFiClient client)
-{
-  String request = "";
-  if (client)
+  if (!SPIFFS.begin(true))
   {
-    unsigned long time = millis();
-    while (!client.connected() && millis() - time <= 5000)
-      ;
-
-    time = millis();
-    if (!client.connected())
-    {
-      Serial.println("Connection timeout");
-      return "";
-    }
-    while (client.connected() && millis() - time <= 2e4)
-    {
-      if (client.available())
-      {
-        time = millis();
-        char c = client.read();
-        if (c != '\r')
-        {
-          request += c;
-        }
-      }
-      else
-      {
-        break;
-      }
-    }
-
-    if (millis() - time > 2e4)
-    {
-      client.stop();
-    }
+    Serial.println("[WiFi]: An Error has occurred while mounting SPIFFS");
+    return File();
   }
-  return request;
+  return SPIFFS.open(file_path);
 }
 
-void setup_server(TaskFunction_t handle, const char *pcName)
+bool connect_to_broker(const char *ID)
 {
-  setup_server(handle, pcName, 80);
-}
+  File broker_configure_file = load_file(BROKER_CONFIG_PATH);
 
-void setup_server(TaskFunction_t handle, const char *pcName, uint16_t port)
-{
-  Serial.print("[host]: iniciando host... ");
-  server = WiFiServer(port);
-  server.begin();
-  Serial.println("Criando task...");
-  xTaskCreate(
-      handle,             /* Task function. */
-      pcName,             /* name of task. */
-      20480,              /* Stack size of task in bytes (20Kb)*/
-      &server,            /* parameter of the task */
-      1,                  /* priority of the task */
-      &server_task_handle /* Task handle to keep track of created task */
-  );                      /* pin task to core 0 */
-  delay(500);
+  if (!broker_configure_file)
+  {
+    Serial.println("[Broker]: Failed to open configuration file");
+    return false;
+  }
+
+  String broker_address = broker_configure_file.readStringUntil(';');
+  uint16_t broker_port = static_cast<uint16_t>(
+      broker_configure_file.readStringUntil(';').toInt());
+  String user = broker_configure_file.readStringUntil(';');
+  String password = broker_configure_file.readStringUntil(EOF);
+
+  // Serial.println("Broker configs:");
+  // Serial.print("\tID: ");
+  // Serial.println(ID);
+  // Serial.println("\tbroker_address: " + broker_address);
+  // Serial.print("\tbroker_port: ");
+  // Serial.println(broker_port);
+  // Serial.println("\tuser: " + user);
+  // Serial.println("\tpassword: " + password);
+
+  mqtt_client.setServer(broker_address.c_str(), broker_port);
+  mqtt_client.connect(ID, user.c_str(), password.c_str());
+  delay(1000);
+  return mqtt_client.connected();
 }
 
 bool setup_wifi()
 {
-#ifndef WIFI_PASSWORD
-  WiFi.begin(WIFI_SSID);
-#endif
-#ifdef WIFI_PASSWORD
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
-  delay(100);
+  File wifi_config_file = load_file(WIFI_CONFIG_PATH);
+
+  if (!wifi_config_file)
+  {
+    Serial.println("[WiFi]: Failed to open configuration file");
+    return false;
+  }
+
   Serial.print("[WiFi]: Connecting to ");
-  Serial.print(WIFI_SSID);
+  String type = wifi_config_file.readStringUntil(';');
+
+  if (type.equals("Default"))
+  {
+    String ssid = wifi_config_file.readStringUntil(';');
+    String password = wifi_config_file.readStringUntil(EOF);
+    WiFi.begin(ssid.c_str(), password.c_str());
+    delay(10);
+    Serial.print(ssid);
+  }
+  else
+    return false;
+
+  delay(100);
   for (int count = 0; WiFi.status() != WL_CONNECTED && count < 150; count)
   {
     Serial.print('.');
@@ -116,53 +80,52 @@ bool setup_wifi()
   {
     return false;
   }
-  SERVER_IP = WiFi.localIP().toString();
   Serial.print("[WiFi]: Connected, IP address: ");
-  Serial.println(SERVER_IP);
+  Serial.println(WiFi.localIP().toString());
   return true;
 }
 
-bool login_on_server()
-{
-  HTTPClient http;
-  // server preconnect
-  client.connect(API_DOMAIN, 80);
-  if (client.connected())
-  {
+// bool login_on_server()
+// {
+//   HTTPClient http;
+//   // server preconnect
+//   client.connect(API_DOMAIN, 80);
+//   if (client.connected())
+//   {
 
-    bool http_sucess_connection = http.begin(client, API_URL);
-    if (http_sucess_connection)
-    {
-      Serial.println("[API]: Connectado, enviando sinal ");
-      http.addHeader("Content-Type", "application/json");
-      int http_status = http.POST(LOGIN_BODY(WiFi.macAddress()));
+//     bool http_sucess_connection = http.begin(client, API_URL);
+//     if (http_sucess_connection)
+//     {
+//       Serial.println("[API]: Connectado, enviando sinal ");
+//       http.addHeader("Content-Type", "application/json");
+//       int http_status = http.POST(LOGIN_BODY(WiFi.macAddress()));
 
-      Serial.print("[API]: Esperando resposta");
-      while (client.available())
-        Serial.print('.');
-      Serial.println();
+//       Serial.print("[API]: Esperando resposta");
+//       while (client.available())
+//         Serial.print('.');
+//       Serial.println();
 
-      if (http_status != -1 && http_status == 200)
-      {
-        Serial.println("[API Response]: \"" + http.getString() + "\"");
-      }
-      else
-      {
-        Serial.print("[API Error]: ");
-        Serial.print(http_status);
-        return false;
-      }
-      http.end();
-      return true;
-    }
-    else
-    {
-      Serial.println("[API]: Falha de conexão...");
-      return false;
-    }
-  }
-  else
-  {
-    return false;
-  }
-}
+//       if (http_status != -1 && http_status == 200)
+//       {
+//         Serial.println("[API Response]: \"" + http.getString() + "\"");
+//       }
+//       else
+//       {
+//         Serial.print("[API Error]: ");
+//         Serial.print(http_status);
+//         return false;
+//       }
+//       http.end();
+//       return true;
+//     }
+//     else
+//     {
+//       Serial.println("[API]: Falha de conexão...");
+//       return false;
+//     }
+//   }
+//   else
+//   {
+//     return false;
+//   }
+// }
