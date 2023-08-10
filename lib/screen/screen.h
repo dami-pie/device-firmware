@@ -3,8 +3,8 @@
 #define LGFX_AUTODETECT // Autodetect board
 #define LGFX_USE_V1     // set to use new version of library
 
-#include "ntpTime.h"
-#include "ui.h"
+#include "ui/ui.h"
+#include "utils.h"
 #include "lv_conf.h"
 #include <lvgl.h>
 #include <LovyanGFX.hpp>
@@ -18,7 +18,7 @@
 #define BLACK_COLOR 0x000000
 #define WHITE_COLOR 0xFCFBF7
 
-static LGFX lcd; // declare display variable
+static LGFX lcd;                   // declare display variable
 static const int gmtOffset = (-3); // GMT-03 [Brasilia]
 /*------------------- LVGL CONFIG --------------------*/
 // 1.Define screen resolution for LVGL

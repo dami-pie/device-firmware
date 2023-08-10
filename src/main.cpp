@@ -31,10 +31,7 @@ void setup(void)
   lv_obj_add_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
   lv_timer_handler();
 
-  connection_setup_success = setup_wifi(); // && login_on_server();
-
-  if (connection_setup_success)
-    connect_to_broker("ESP32");
+  start_client(WiFi.macAddress().c_str());
 }
 
 void screen_load(const char *text, uint32_t color)
@@ -53,19 +50,21 @@ void loop()
       otp.getCode(
           mktime(&timeInfo)));
 
-  if (mqtt_client.connected())
-    mqtt_client.publish("otp_code", "123456");
-
-  switch (WiFi.status())
+  if (is_client_connected())
   {
-  case WL_CONNECTED:
     screen_load(LV_SYMBOL_WIFI "\tConectado", GREEN_COLOR);
-    break;
-
-  default:
-    screen_load(LV_SYMBOL_CLOSE "\tDesconectado", BROWN_COLOR);
-    WiFi.reconnect() || setup_wifi();
+    mqtt_client.publish("otp_code", "123456");
+    mqtt_client.subscribe("ot");
   }
+  else
+  {
+    screen_load(LV_SYMBOL_CLOSE "\tDesconectado", BROWN_COLOR);
+    if (WiFi.status() != WL_CONNECTED)
+      !WiFi.reconnect() || setup_wifi();
+    else
+      reconnet_client(3);
+  }
+
   uint32_t time = lv_timer_handler();
   delay(time > 1000 ? time : 1000);
 }
