@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
+#include "utils.h"
 
 // #define PIN_SCK 14  // Configurable, see typical pin layout above
 #define IRQ_PIN 34  // Configurable, see typical pin layout above
@@ -14,10 +15,24 @@
 #define SS_PIN 12   // Configurable, see typical pin layout above
 
 extern SPIClass spiBus;
-extern MFRC522_SPI spiDevice;
+extern MFRC522_SPI *sspiDevice;
 extern MFRC522 mfrc522;
 extern volatile bool is_nfc_card_present;
-//
+
+#define SPI_MFRC522_CONFING_PAHT "/configs/SPI/mfrc522/"
+
+typedef struct
+{
+  byte IRQ;
+  byte MISO;
+  byte MOSI;
+  byte SCK;
+  byte RST;
+  byte SS;
+} spi_pins_t;
+
+spi_pins_t spi_pins;
+
 // And if neeed - also change the bus settings.
 //
 // SPI spiBus = SPI(HSPI);
@@ -29,6 +44,7 @@ class NFCTag
 {
 private:
   void (*nfc_callback)(void);
+  bool load_config_file();
 
 public:
   void begin(void (*cb)());
