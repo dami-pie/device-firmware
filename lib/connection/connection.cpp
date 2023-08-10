@@ -5,7 +5,9 @@ connection_config_t client_config;
 bool config_loaded = false;
 const char *client_id;
 PubSubClient mqtt_client;
-WiFiClient wifi_client;
+WiFiClientSecure wifi_client;
+
+WiFiSTAClass wifi;
 
 File load_file(const char *file_path)
 {
@@ -19,14 +21,14 @@ File load_file(const char *file_path)
 
 void start_client(const char *_client_id)
 {
-  wifi_client = WiFiClient();
+  wifi_client = WiFiClientSecure();
   mqtt_client = PubSubClient(wifi_client);
   client_id = _client_id;
 
   if (!config_loaded)
     load_client_config();
 
-  if (WiFi.status() == WL_CONNECTED && setup_wifi())
+  if (wifi.status() == WL_CONNECTED && setup_wifi())
   {
     Serial.printf("[Mqtt]: starting connection to server %s...", client_config.server_address);
     mqtt_client.setServer(client_config.server_address, client_config.port);
@@ -40,7 +42,7 @@ void start_client(const char *_client_id)
 
 bool is_client_connected()
 {
-  return WiFi.status() == WL_CONNECTED && mqtt_client.connected();
+  return wifi.status() == WL_CONNECTED && mqtt_client.connected();
 }
 
 void reconnet_client(int attempts)
@@ -64,7 +66,7 @@ void reconnet_client(int attempts)
     }
   }
   Serial.print("Restarting wifi... ");
-  Serial.println(WiFi.reconnect() ? "OK!" : "Fail!");
+  Serial.println(wifi.reconnect() ? "OK!" : "Fail!");
 }
 
 void load_client_config()
@@ -102,36 +104,37 @@ void load_client_config()
 
 bool setup_wifi()
 {
-  if (wifi_configure.auth_protocol == WIFI_PEAP)
-  {
-    WiFi.mode(WIFI_STA); // init wifi mode
-    const byte *user = (const byte *)(wifi_configure.username);
-    const byte *pass = (const byte *)(wifi_configure.password);
-
-    esp_wifi_sta_wpa2_ent_set_username(user, sizeof(user));
-    esp_wifi_sta_wpa2_ent_set_password(pass, sizeof(pass));
-    esp_wifi_sta_wpa2_ent_enable();
-    // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
-    WiFi.begin(wifi_configure.ssid);
-  }
-  else
-  {
-    WiFi.begin(
-        wifi_configure.ssid,
-        wifi_configure.password);
-  }
+  // if (wifi_configure.auth_protocol == WIFI_PEAP)
+  //{
+  // esp_wifi_sta_wpa2_ent_set_username(user, sizeof(user));
+  // esp_wifi_sta_wpa2_ent_set_password(pass, sizeof(pass));
+  // esp_wifi_sta_wpa2_ent_enable();
+  // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+  // wifi.begin(
+  //    wifi_configure.ssid,
+  //    WPA2_AUTH_PEAP,
+  //    NULL,
+  //    wifi_configure.username,
+  //    wifi_configure.password);
+  //}
+  // else
+  //{
+  wifi.begin(
+      wifi_configure.ssid,
+      wifi_configure.password);
+  //}
   Serial.print("[WiFi]: Connecting to ");
   Serial.println(wifi_configure.ssid);
 
   delay(100);
-  for (int count = 0; WiFi.status() != WL_CONNECTED && count < 150; count)
+  for (int count = 0; wifi.status() != WL_CONNECTED && count < 150; count)
     Serial.print('.'), delay(1000);
 
   Serial.println();
-  if (WiFi.status() != WL_CONNECTED)
+  if (wifi.status() != WL_CONNECTED)
     return false;
 
   Serial.print("[WiFi]: Connected, IP address: ");
-  Serial.println(WiFi.localIP().toString());
+  Serial.println(wifi.localIP().toString());
   return true;
 }

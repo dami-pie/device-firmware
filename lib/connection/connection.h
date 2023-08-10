@@ -1,10 +1,11 @@
 #ifndef _CONNECTION_H
 #define _CONNECTION_H
 
-#include <Arduino.h>
-#include <WiFi.h>
-#include <esp_wpa2.h>
-#include <esp_wifi.h>
+#include "IPv6Address.h"
+#include "WiFiSTA.h"
+#include "WiFiClientSecure.h"
+// #include <esp_wpa2.h>
+// #include <esp_wifi.h>
 
 #include "SPIFFS.h"
 #include "PubSubClient.h"
@@ -51,6 +52,6 @@ void reconnet_client(int attempts = 5);
 bool is_client_connected();
 
 extern PubSubClient mqtt_client;
-extern WiFiClient wifi_client;
-
+extern WiFiClientSecure wifi_client;
+extern WiFiSTAClass wifi;
 #endif

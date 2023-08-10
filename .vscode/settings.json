@@ -14,6 +14,8 @@
         "vector": "cpp",
         "initializer_list": "cpp",
         "ui_helpers.h": "c",
-        "wificlient.h": "c"
+        "wificlient.h": "c",
+        "limits": "cpp",
+        "type_traits": "cpp"
     }
 }
