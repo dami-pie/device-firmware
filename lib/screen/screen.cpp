@@ -53,6 +53,12 @@ void getUpdate()
 void setup_screen()
 {
   Serial.println("[Screen]: ligando tela");
+  File config_file = load_file("/configs/ui/brightness");
+  byte brightness = static_cast<byte>(
+      config_file.readStringUntil(EOF).toInt());
+  Serial.print("[Screen]: Screen brightness set to ");
+  Serial.println(brightness);
+
   timer__begin(gmtOffset);
 
   /*------------------- LCD CONFIG --------------------/
@@ -61,7 +67,7 @@ void setup_screen()
   ----------------------------------------------------*/
   lcd.init();
   lcd.setRotation(lcd.getRotation() ^ (screenWidth > screenHeight ? 1 : 0));
-  lcd.setBrightness(1);
+  lcd.setBrightness(brightness);
 
   /*------------------- LVGL CONFIG --------------------/
    1. Initialize LVGL
