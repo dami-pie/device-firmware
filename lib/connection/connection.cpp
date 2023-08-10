@@ -1,9 +1,12 @@
 #include "connection.h"
 
-WiFiClient client;
-PubSubClient mqtt_client(client);
+wifi_setup_t wifi_configure;
+connection_config_t client_config;
+bool config_loaded = false;
+const char *client_id;
+PubSubClient mqtt_client;
+WiFiClient wifi_client;
 
-// TaskHandle_t server_task_handle;
 File load_file(const char *file_path)
 {
   if (!SPIFFS.begin(true))
@@ -14,118 +17,121 @@ File load_file(const char *file_path)
   return SPIFFS.open(file_path);
 }
 
-bool connect_to_broker(const char *ID)
+void start_client(const char *_client_id)
 {
-  File broker_configure_file = load_file(BROKER_CONFIG_PATH);
+  wifi_client = WiFiClient();
+  mqtt_client = PubSubClient(wifi_client);
+  client_id = _client_id;
 
-  if (!broker_configure_file)
+  if (!config_loaded)
+    load_client_config();
+
+  if (WiFi.status() == WL_CONNECTED && setup_wifi())
   {
-    Serial.println("[Broker]: Failed to open configuration file");
-    return false;
+    Serial.printf("[Mqtt]: starting connection to server %s...", client_config.server_address);
+    mqtt_client.setServer(client_config.server_address, client_config.port);
+    if (mqtt_client.connect(client_id,
+                            client_config.username, client_config.password))
+      Serial.println(" Connected!");
+    else
+      Serial.println(" Fail!");
+  }
+}
+
+bool is_client_connected()
+{
+  return WiFi.status() == WL_CONNECTED && mqtt_client.connected();
+}
+
+void reconnet_client(int attempts)
+{
+  Serial.println("In reconnect...");
+  for (; !is_client_connected() and attempts > 0; attempts--)
+  {
+    Serial.print("Attempting MQTT reconnection...");
+    // Attempt to connect
+    if (mqtt_client.connect(client_id,
+                            client_config.username, client_config.password))
+    {
+      Serial.println("connected");
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(mqtt_client.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+  Serial.print("Restarting wifi... ");
+  Serial.println(WiFi.reconnect() ? "OK!" : "Fail!");
+}
+
+void load_client_config()
+{
+  File config_file = load_file(WIFI_CONFIG_PATH);
+  if (!config_file)
+  {
+    Serial.println("[Wifi]: fail on load configure file");
+    config_loaded = false;
+    return;
   }
 
-  String broker_address = broker_configure_file.readStringUntil(';');
-  uint16_t broker_port = static_cast<uint16_t>(
-      broker_configure_file.readStringUntil(';').toInt());
-  String user = broker_configure_file.readStringUntil(';');
-  String password = broker_configure_file.readStringUntil(EOF);
+  wifi_configure.auth_protocol = config_file.readStringUntil(';').toInt();
+  wifi_configure.ssid = config_file.readStringUntil(';').c_str();
+  if (wifi_configure.auth_protocol == WIFI_PEAP)
+    wifi_configure.username = config_file.readStringUntil(';').c_str();
+  wifi_configure.password = config_file.readStringUntil(EOF).c_str();
 
-  // Serial.println("Broker configs:");
-  // Serial.print("\tID: ");
-  // Serial.println(ID);
-  // Serial.println("\tbroker_address: " + broker_address);
-  // Serial.print("\tbroker_port: ");
-  // Serial.println(broker_port);
-  // Serial.println("\tuser: " + user);
-  // Serial.println("\tpassword: " + password);
+  config_file = load_file(BROKER_CONFIG_PATH);
+  if (!config_file)
+  {
+    Serial.println("[Broker]: Failed to open configuration file");
+    config_loaded = false;
+    return;
+  }
 
-  mqtt_client.setServer(broker_address.c_str(), broker_port);
-  mqtt_client.connect(ID, user.c_str(), password.c_str());
-  delay(1000);
-  return mqtt_client.connected();
+  client_config.server_address = config_file.readStringUntil(';').c_str();
+  client_config.port = static_cast<uint16_t>(
+      config_file.readStringUntil(';').toInt());
+  client_config.username = config_file.readStringUntil(';').c_str();
+  client_config.password = config_file.readStringUntil(EOF).c_str();
+
+  config_loaded = true;
 }
 
 bool setup_wifi()
 {
-  File wifi_config_file = load_file(WIFI_CONFIG_PATH);
-
-  if (!wifi_config_file)
+  if (wifi_configure.auth_protocol == WIFI_PEAP)
   {
-    Serial.println("[WiFi]: Failed to open configuration file");
-    return false;
-  }
+    WiFi.mode(WIFI_STA); // init wifi mode
+    const byte *user = (const byte *)(wifi_configure.username);
+    const byte *pass = (const byte *)(wifi_configure.password);
 
-  Serial.print("[WiFi]: Connecting to ");
-  String type = wifi_config_file.readStringUntil(';');
-
-  if (type.equals("Default"))
-  {
-    String ssid = wifi_config_file.readStringUntil(';');
-    String password = wifi_config_file.readStringUntil(EOF);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    delay(10);
-    Serial.print(ssid);
+    esp_wifi_sta_wpa2_ent_set_username(user, sizeof(user));
+    esp_wifi_sta_wpa2_ent_set_password(pass, sizeof(pass));
+    esp_wifi_sta_wpa2_ent_enable();
+    // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+    WiFi.begin(wifi_configure.ssid);
   }
   else
-    return false;
+  {
+    WiFi.begin(
+        wifi_configure.ssid,
+        wifi_configure.password);
+  }
+  Serial.print("[WiFi]: Connecting to ");
+  Serial.println(wifi_configure.ssid);
 
   delay(100);
   for (int count = 0; WiFi.status() != WL_CONNECTED && count < 150; count)
-  {
-    Serial.print('.');
-    delay(1000);
-  }
+    Serial.print('.'), delay(1000);
+
   Serial.println();
   if (WiFi.status() != WL_CONNECTED)
-  {
     return false;
-  }
+
   Serial.print("[WiFi]: Connected, IP address: ");
   Serial.println(WiFi.localIP().toString());
   return true;
 }
-
-// bool login_on_server()
-// {
-//   HTTPClient http;
-//   // server preconnect
-//   client.connect(API_DOMAIN, 80);
-//   if (client.connected())
-//   {
-
-//     bool http_sucess_connection = http.begin(client, API_URL);
-//     if (http_sucess_connection)
-//     {
-//       Serial.println("[API]: Connectado, enviando sinal ");
-//       http.addHeader("Content-Type", "application/json");
-//       int http_status = http.POST(LOGIN_BODY(WiFi.macAddress()));
-
-//       Serial.print("[API]: Esperando resposta");
-//       while (client.available())
-//         Serial.print('.');
-//       Serial.println();
-
-//       if (http_status != -1 && http_status == 200)
-//       {
-//         Serial.println("[API Response]: \"" + http.getString() + "\"");
-//       }
-//       else
-//       {
-//         Serial.print("[API Error]: ");
-//         Serial.print(http_status);
-//         return false;
-//       }
-//       http.end();
-//       return true;
-//     }
-//     else
-//     {
-//       Serial.println("[API]: Falha de conexão...");
-//       return false;
-//     }
-//   }
-//   else
-//   {
-//     return false;
-//   }
-// }
