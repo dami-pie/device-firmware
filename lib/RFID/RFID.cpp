@@ -1,14 +1,42 @@
 #include "RFID.h"
 
 SPIClass spiBus(HSPI);
-MFRC522_SPI spiDevice = MFRC522_SPI(SS_PIN, RST_PIN, &spiBus);
-MFRC522 mfrc522 = MFRC522(&spiDevice);
+MFRC522_SPI *spiDevice;
+MFRC522 mfrc522;
 
 volatile bool is_nfc_card_present = false;
 
 void IRAM_ATTR handle_card_isr()
 {
   is_nfc_card_present = true;
+}
+
+bool load_pin_config(const char *path, byte &pin)
+{
+  File file = SPIFFS.open(path);
+  if (file)
+  {
+    pin = static_cast<byte>(
+        file.readStringUntil(EOF).toInt());
+
+    return true;
+  }
+
+  else
+    return false;
+}
+
+bool NFCTag::load_config_file()
+{
+  if (!SPIFFS.begin(true))
+    return false;
+
+  return load_pin_config(SPI_MFRC522_CONFING_PAHT "irq", spi_pins.IRQ) &&
+         load_pin_config(SPI_MFRC522_CONFING_PAHT "miso", spi_pins.MISO) &&
+         load_pin_config(SPI_MFRC522_CONFING_PAHT "mosi", spi_pins.MOSI) &&
+         load_pin_config(SPI_MFRC522_CONFING_PAHT "rst", spi_pins.RST) &&
+         load_pin_config(SPI_MFRC522_CONFING_PAHT "sck", spi_pins.SCK) &&
+         load_pin_config(SPI_MFRC522_CONFING_PAHT "ss", spi_pins.SS);
 }
 
 void NFCTag::begin(void (*cb)())
@@ -19,8 +47,20 @@ void NFCTag::begin(void (*cb)())
 
 void NFCTag::begin()
 {
+  if (!this->load_config_file())
+  {
+    Serial.println("[NFC]: fail to load pins configure!");
+    return;
+  }
+
+  spiDevice = new MFRC522_SPI(spi_pins.SS, spi_pins.RST, &spiBus);
+  mfrc522 = MFRC522(spiDevice);
+
   is_nfc_card_present = false;
-  spiBus.begin(PIN_SCK, PIN_MISO, PIN_MOSI);
+  spiBus.begin(
+      spi_pins.SCK,
+      spi_pins.MISO,
+      spi_pins.MOSI);
   mfrc522.PCD_Init();                                  // Init MFRC522
   mfrc522.PCD_DumpVersionToSerial();                   // Show details of PCD - MFRC522 Card Reader details
   mfrc522.PCD_WriteRegister(MFRC522::ComIrqReg, 0x80); // Clear interrupts
