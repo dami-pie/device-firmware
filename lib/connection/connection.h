@@ -13,8 +13,8 @@
 #define WIFI_PEAP 0
 #define WIFI_WPA2 1
 
-#define WIFI_CONFIG_PATH "/configs/secure/wifi.config"
-#define BROKER_CONFIG_PATH "/configs/secure/broker.config"
+#define WIFI_CONFIG_PATH "/configs/env/wifi.config"
+#define BROKER_CONFIG_PATH "/configs/env/broker.config"
 
 // #ifndef WIFI_SSID
 // #define WIFI_SSID "meet.local.com"
