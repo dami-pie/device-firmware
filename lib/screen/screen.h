@@ -17,6 +17,9 @@
 #define NTP_SERVER_2 "b.st1.ntp.br"
 #define BLACK_COLOR 0x000000
 #define WHITE_COLOR 0xFCFBF7
+#define GREEN_COLOR 0x9DF393
+#define BROWN_COLOR 0xF4B896
+#define RED_COLOR 0xF81212
 
 static LGFX lcd;                   // declare display variable
 static const int gmtOffset = (-3); // GMT-03 [Brasilia]
@@ -41,4 +44,6 @@ void codeUpdate(String code);
 void getUpdate();
 
 void setup_screen();
+
+void show_layout(const char *text, uint32_t color);
 #endif

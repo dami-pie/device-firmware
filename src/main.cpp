@@ -1,19 +1,33 @@
 #include "screen.h"
 #include <Arduino.h>
 #include <WiFi.h>
-#include "connection.h"
+#include "api/connection/connection.h"
 #include "pitches.h"
 #include "TOTP.h"
-
-#define GREEN_COLOR 0x9DF393
-#define BROWN_COLOR 0xF4B896
 
 #define DOOR_PIN 4
 #define BUZZER_PIN 2
 
 bool connection_setup_success;
-uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
+// uint8_t key[] = {0x18, 0x18, 0x87, 0xa0};
+byte *load_key()
+{
+  File key_file = load_file("/configs/env/otp.config.bin");
+  if (!key_file)
+  {
+    Serial.println("[OTP]: Error on load key");
+    return NULL;
+  }
 
+  byte *key = (byte *)malloc(key_file.available());
+  key_file.readBytes((char *)key, sizeof(key));
+  // Serial.println("------ SECURE KEY -----");
+  // Serial.write(key, sizeof(key));
+  // Serial.println("\n-----------------------");
+  return key;
+}
+
+byte *key = load_key();
 TOTP otp(key, sizeof(key), 60);
 
 void setup(void)
@@ -23,24 +37,10 @@ void setup(void)
   Serial.setDebugOutput(true);
   Serial.println();
   setup_screen();
-  lv_label_set_text(ui_WifiLabel, LV_SYMBOL_REFRESH "\tConectando");
-  lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(BROWN_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
-  codeUpdate(" ");
-  lv_obj_add_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
-  lv_timer_handler();
-
+  show_layout(LV_SYMBOL_REFRESH "\tConectando", BROWN_COLOR);
+  codeUpdate("wating...");
   start_client(WiFi.macAddress().c_str());
-}
-
-void screen_load(const char *text, uint32_t color)
-{
-  lv_label_set_text(ui_WifiLabel, text);
-  lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_clear_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_clear_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
+  lv_timer_handler();
 }
 
 void loop()
@@ -52,13 +52,13 @@ void loop()
 
   if (is_client_connected())
   {
-    screen_load(LV_SYMBOL_WIFI "\tConectado", GREEN_COLOR);
+    show_layout(LV_SYMBOL_WIFI "\tConectado", GREEN_COLOR);
     mqtt_client.publish("otp_code", "123456");
     mqtt_client.subscribe("ot");
   }
   else
   {
-    screen_load(LV_SYMBOL_CLOSE "\tDesconectado", BROWN_COLOR);
+    show_layout(LV_SYMBOL_CLOSE "\tDesconectado", BROWN_COLOR);
     if (WiFi.status() != WL_CONNECTED)
       !WiFi.reconnect() || setup_wifi();
     else

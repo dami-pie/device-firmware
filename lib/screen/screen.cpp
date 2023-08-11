@@ -97,3 +97,12 @@ void setup_screen()
 
   ui_init();
 }
+
+void show_layout(const char *text, uint32_t color)
+{
+  lv_label_set_text(ui_WifiLabel, text);
+  lv_obj_set_style_bg_color(ui_WifiPanel, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_border_color(ui_WifiPanel, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_clear_flag(ui_TimeLabel, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(ui_DateLabel, LV_OBJ_FLAG_HIDDEN);
+}
