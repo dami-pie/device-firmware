@@ -151,6 +151,9 @@ def main():
   print('Starting dump data', end='...')
   # try:
     
+  with open(os.path.join(dump_config_path, 'id'), '+bw') as key_file:
+    key_file.write(bytearray(device_config['id'], encoding="ascii"))
+
   with open(os.path.join(dump_config_path, 'otp.config.bin'), '+bw') as key_file:
     key_file.write(_bytes)
 

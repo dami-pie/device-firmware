@@ -32,7 +32,7 @@ extern "C"
   extern lv_obj_t *ui_TimeLabel;
   extern lv_obj_t *ui_DateLabel;
 
-  LV_IMG_DECLARE(ui_img_dami_png); // assets\Dami.png
+  // LV_IMG_DECLARE(ui_img_dami_png); // assets\Dami.png
 
   void ui_init(void);
 

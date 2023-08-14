@@ -37,17 +37,21 @@ typedef struct
   String username;
 } connection_config_t;
 
+typedef struct
+{
+  char *ca_certificate;
+  char *cetificate;
+  char *private_key;
+} ssl_credentials_t;
+
+extern ssl_credentials_t ssl_credentials;
 extern wifi_setup_t wifi_configure;
 extern connection_config_t client_config;
 
 // extern TaskHandle_t server_task_handle;
 
-void load_client_config();
 bool setup_wifi();
 
-extern const char *client_id;
-void start_client(const char *client_id = client_id);
-void reconnet_client(int attempts = 5);
 bool is_client_connected();
 
 extern PubSubClient mqtt_client;

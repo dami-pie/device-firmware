@@ -13,7 +13,7 @@
 
 ///////////////////// VARIABLES ////////////////////
 lv_obj_t *ui_LoginScreen;
-lv_obj_t *ui_EcompLogo;
+// lv_obj_t *ui_EcompLogo;
 lv_obj_t *ui_LoginLabel;
 lv_obj_t *ui_QRCodeLogin;
 lv_obj_t *ui_WifiPanel;
@@ -32,14 +32,14 @@ void ui_LoginScreen_screen_init(void)
   lv_obj_set_style_bg_opa(ui_LoginScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   // ui_EcompLogo
-  ui_EcompLogo = lv_img_create(ui_LoginScreen);
-  lv_img_set_src(ui_EcompLogo, &ui_img_dami_png);
-  lv_obj_set_width(ui_EcompLogo, LV_SIZE_CONTENT);  ///     28
-  lv_obj_set_height(ui_EcompLogo, LV_SIZE_CONTENT); /// 64
-  lv_obj_set_x(ui_EcompLogo, 16);
-  lv_obj_set_y(ui_EcompLogo, 16);
-  lv_obj_add_flag(ui_EcompLogo, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
-  lv_obj_clear_flag(ui_EcompLogo, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+  // ui_EcompLogo = lv_img_create(ui_LoginScreen);
+  // lv_img_set_src(ui_EcompLogo, &ui_img_dami_png);
+  // lv_obj_set_width(ui_EcompLogo, LV_SIZE_CONTENT);  ///     28
+  // lv_obj_set_height(ui_EcompLogo, LV_SIZE_CONTENT); /// 64
+  // lv_obj_set_x(ui_EcompLogo, 16);
+  // lv_obj_set_y(ui_EcompLogo, 16);
+  // lv_obj_add_flag(ui_EcompLogo, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+  // lv_obj_clear_flag(ui_EcompLogo, LV_OBJ_FLAG_SCROLLABLE); /// Flags
 
   // ui_LoginLabel
   ui_LoginLabel = lv_label_create(ui_LoginScreen);
