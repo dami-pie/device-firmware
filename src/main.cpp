@@ -2,8 +2,8 @@
 
 #include "screen.h"
 #include "api/api.h"
-#include "pitches.h"
 #include "otp/otp.h"
+#include "RFID.h"
 
 #define DOOR_PIN 4
 #define BUZZER_PIN 2
@@ -31,8 +31,15 @@ void ui_watch(void *args)
   }
 }
 
-bool trigger() { return false; }
-void action() {}
+bool trigger() { return mfrc522.PICC_IsNewCardPresent(); }
+void action()
+{
+  String tagId;
+  if (Tag.getTagID(tagId))
+    mqtt_client.publish("card", tagId.c_str());
+  else
+    Serial.println("Erro on read NFC tag...");
+}
 
 void setup(void)
 {
@@ -46,6 +53,7 @@ void setup(void)
   client.begin(trigger, action);
   delay(lv_timer_handler());
   xTaskCreate(ui_watch, "ui", 10000, NULL, 2, &ui_wacher);
+  Tag.begin();
 }
 
 void loop()
@@ -53,6 +61,7 @@ void loop()
   if (is_client_connected())
   {
     connected = true;
+    reconnecting = false;
   }
   else if (WiFi.status() == WL_CONNECTED)
   {
