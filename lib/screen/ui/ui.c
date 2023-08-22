@@ -48,7 +48,7 @@ void ui_LoginScreen_screen_init(void)
   lv_obj_set_x(ui_LoginLabel, -16);
   lv_obj_set_y(ui_LoginLabel, 40);
   lv_obj_set_align(ui_LoginLabel, LV_ALIGN_TOP_RIGHT);
-  lv_label_set_text(ui_LoginLabel, "LOGIN");
+  lv_label_set_text(ui_LoginLabel, "DAMI©");
   lv_obj_set_style_text_font(ui_LoginLabel, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   // ui_QRCodeLogin

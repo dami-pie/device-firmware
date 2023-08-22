@@ -14,23 +14,6 @@ void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *buf)
   lv_disp_flush_ready(disp);
 }
 
-// 2.Define screen buffer for LVGL
-void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
-  uint16_t touchX, touchY;
-
-  if (!lcd.getTouch(&touchX, &touchY))
-  {
-    data->state = LV_INDEV_STATE_RELEASED;
-  }
-  else
-  {
-    data->state = LV_INDEV_STATE_PRESSED;
-    data->point.x = touchX, data->point.y = touchY; /*Set the coordinates*/
-  }
-}
-/*----------------------------------------------------*/
-
 void codeUpdate(String code)
 {
   lv_qrcode_update(ui_QRCodeLogin, code.c_str(), code.length());
@@ -77,7 +60,7 @@ void setup_screen()
    5. LVGL : Setup & Initialize the input device driver
    ----------------------------------------------------*/
   lv_init();
-  lv_disp_draw_buf_init(&draw_buf, buf, buf2, screenWidth * 10);
+  lv_disp_draw_buf_init(&draw_buf, buf, nullptr, screenWidth * 10);
 
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
@@ -86,14 +69,6 @@ void setup_screen()
   disp_drv.hor_res = screenWidth,
   disp_drv.ver_res = screenHeight;
   lv_disp_drv_register(&disp_drv);
-
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv = {
-      .type = LV_INDEV_TYPE_POINTER,
-      .read_cb = touchpad_read,
-  };
-  lv_indev_drv_register(&indev_drv);
 
   ui_init();
 }

@@ -25,19 +25,21 @@ static LGFX lcd;                   // declare display variable
 static const int gmtOffset = (-3); // GMT-03 [Brasilia]
 /*------------------- LVGL CONFIG --------------------*/
 // 1.Define screen resolution for LVGL
-static const uint16_t screenWidth = 320, screenHeight = 480;
+// static const uint16_t screenWidth = 320, screenHeight = 480;
+#define screenWidth 320
+#define screenHeight 480
 
 // 2.Define screen buffer for LVGL
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[screenWidth * 10];
-static lv_color_t buf2[screenWidth * 10];
+// static lv_color_t buf2[screenWidth * 10];
 
 /*----------------- DISPLAY WORKERS ------------------*/
 // 1.Display callbac+ to flush the buffer to screen
-void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *buf);
+// void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *buf);
 
 // 2. Touchpad callback to read the touchpad
-void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data);
+// void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data);
 
 void codeUpdate(String code);
 
