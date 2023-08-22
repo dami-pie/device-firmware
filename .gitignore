@@ -8,3 +8,4 @@ secret.h
 data/configs/env/*
 certs/*
 **/__pycache__/*
+logs/*
