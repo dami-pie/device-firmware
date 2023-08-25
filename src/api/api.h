@@ -11,13 +11,12 @@
 #define SCAN_CARD_ACTION "new_card"
 
 #define API_TRIGGER_T std::function<bool()> trigger
-#define API_CALLBACK_T std::function<void()> trigger_callback
+#define API_CALLBACK_T std::function<const char *(String * topic)> trigger_callback
 class API
 {
 private:
   API_TRIGGER_T;
-  API_CALLBACK_T;
-  env_t *env;
+  dami_config_t *config;
 
   bool loaded = false;
   bool connected = false;
@@ -25,10 +24,13 @@ private:
   void reconnect();
 
 public:
+  API_CALLBACK_T;
   void loop();
-  void begin(API_TRIGGER_T, API_CALLBACK_T, env_t &env);
+  void begin(API_TRIGGER_T, API_CALLBACK_T, dami_config_t &config);
   void setTrigger(API_TRIGGER_T);
   void setCallback(API_CALLBACK_T);
+
+  void open_door();
 };
 void client_callback(char *topic, uint8_t *payload, unsigned int length);
 

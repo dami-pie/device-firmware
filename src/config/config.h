@@ -14,7 +14,7 @@
 #define OTP_ENV_PATH "/env/otp_key.bin"
 #define CA_CERT_PATH "/env/ca_certificate.pem"
 #define BROKER_ENV_PATH "/env/broker/"
-#define PINS_CONFIG_PATH "/configs/pinout"
+#define PINS_CONFIG_PATH "/configs/pinout/"
 
 #define CONFIG_NOT_LOADED 255
 #define CONFIG_LOADED 0

@@ -13,5 +13,5 @@ bool setup_wifi(wifi_auth_config_t wifi);
 bool is_client_connected();
 
 extern PubSubClient mqtt_client;
-extern WiFiClientSecure wifi_client;
+extern WiFiClient wifi_client;
 #endif

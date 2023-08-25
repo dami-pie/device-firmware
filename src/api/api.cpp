@@ -1,11 +1,11 @@
 #include "api.h"
 
-void API::begin(API_TRIGGER_T, API_CALLBACK_T, env_t &env)
+void API::begin(API_TRIGGER_T, API_CALLBACK_T, dami_config_t &config)
 {
   mqtt_client.setCallback(client_callback);
   this->trigger = trigger;
   this->trigger_callback = trigger_callback;
-  this->env = &env;
+  this->config = &config;
   this->start_connection();
 }
 
@@ -30,7 +30,8 @@ void API::start_connection()
   wifi_client = WiFiClientSecure();
   mqtt_client = PubSubClient(wifi_client);
 
-  if (WiFi.status() != WL_CONNECTED && setup_wifi(env->wifi))
+  env_t *env = &(config->environ);
+  if (WiFi.status() != WL_CONNECTED && setup_wifi(config->environ.wifi))
   {
     Serial.printf("[Mqtt]: starting connection to server %s...", env->broker.server_address);
     mqtt_client.setServer(env->broker.server_address.c_str(),
@@ -51,21 +52,29 @@ void API::start_connection()
 
 void client_callback(char *topic, uint8_t *payload, unsigned int length)
 {
-  if (WiFi.macAddress().equals(topic))
-    if (_action(OPEN_ACTION, payload))
-    {
-      Serial.printf("action: %s", OPEN_ACTION);
-    }
-    else if (_action(DENIED_ACTION, payload))
-    {
-      Serial.printf("action: %s", DENIED_ACTION);
-    }
-    else if (_action(SCAN_CARD_ACTION, payload))
-    {
-      Serial.printf("action: %s", SCAN_CARD_ACTION);
-      byte fake_card[] = {0x18, 0x18, 0x87, 0xa0};
-      mqtt_client.publish(NEW_CARD_TOPIC, fake_card, 4);
-    }
+  if (_action(OPEN_ACTION, payload))
+  {
+    Serial.printf("action: %s", OPEN_ACTION);
+    client.open_door();
+  }
+  else if (_action(DENIED_ACTION, payload))
+  {
+    Serial.printf("action: %s", DENIED_ACTION);
+  }
+  else if (_action(SCAN_CARD_ACTION, payload))
+  {
+    Serial.printf("action: %s", SCAN_CARD_ACTION);
+    String _;
+    mqtt_client.publish(NEW_CARD_TOPIC, client.trigger_callback(&_));
+  }
+}
+
+void API::open_door()
+{
+  pinMode(config->dor_pin, OUTPUT);
+  digitalWrite(config->dor_pin, HIGH);
+  delay(2000);
+  digitalWrite(config->dor_pin, LOW);
 }
 
 void API::loop()
@@ -73,7 +82,12 @@ void API::loop()
   if (mqtt_client.connected())
   {
     if (this->trigger())
-      this->trigger_callback();
+    {
+      String topic;
+      String payload = this->trigger_callback(&topic);
+      if (topic.length() && payload.length())
+        mqtt_client.publish(topic.c_str(), payload.c_str());
+    }
     else
       mqtt_client.loop();
   }
@@ -84,6 +98,8 @@ void API::loop()
 void API::reconnect()
 {
   Serial.println("In reconnect...");
+  env_t *env = &(config->environ);
+
   for (int i = 0; !is_client_connected() and i < 5; i++)
   {
     Serial.print("Attempting MQTT reconnection...");

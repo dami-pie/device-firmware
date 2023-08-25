@@ -1,7 +1,7 @@
 #include "connection.h"
 
 PubSubClient mqtt_client;
-WiFiClientSecure wifi_client;
+WiFiClient wifi_client;
 
 // char *getFileContent(String path)
 // {
