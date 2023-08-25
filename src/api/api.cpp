@@ -1,26 +1,16 @@
 #include "api.h"
 
-const char *client_id;
-
-void API::begin(API_TRIGGER_T, API_CALLBACK_T)
+void API::begin(API_TRIGGER_T, API_CALLBACK_T, env_t &env)
 {
   mqtt_client.setCallback(client_callback);
   this->trigger = trigger;
   this->trigger_callback = trigger_callback;
-
+  this->env = &env;
   this->start_connection();
-  delay(1000);
-  mqtt_client.subscribe(client_id);
 }
 
-void API::setTrigger(API_TRIGGER_T)
-{
-  this->trigger = trigger;
-}
-void API::setCallback(API_CALLBACK_T)
-{
-  this->trigger_callback = trigger_callback;
-}
+void API::setTrigger(API_TRIGGER_T) { this->trigger = trigger; }
+void API::setCallback(API_CALLBACK_T) { this->trigger_callback = trigger_callback; }
 
 bool _action(const char *action, byte *payload)
 {
@@ -36,21 +26,22 @@ bool _action(const char *action, byte *payload)
 
 void API::start_connection()
 {
-  wifi_client = WiFiClient();
+
+  wifi_client = WiFiClientSecure();
   mqtt_client = PubSubClient(wifi_client);
 
-  if (!loaded)
-    load_configures();
-
-  if (WiFi.status() != WL_CONNECTED && setup_wifi())
+  if (WiFi.status() != WL_CONNECTED && setup_wifi(env->wifi))
   {
-    Serial.printf("[Mqtt]: starting connection to server %s...", client_config.server_address);
-    mqtt_client.setServer(client_config.server_address.c_str(), client_config.port);
+    Serial.printf("[Mqtt]: starting connection to server %s...", env->broker.server_address);
+    mqtt_client.setServer(env->broker.server_address.c_str(),
+                          env->broker.port);
     if (mqtt_client
-            .connect(client_id, client_config.username.c_str(), client_config.password.c_str()))
+            .connect(env->client_id.c_str(),
+                     env->broker.username.c_str(),
+                     env->broker.password.c_str()))
     {
       Serial.println(" Connected!");
-      mqtt_client.subscribe(client_id);
+      mqtt_client.subscribe(env->client_id.c_str());
       connected = true;
     }
     else
@@ -90,80 +81,19 @@ void API::loop()
     reconnect();
 }
 
-void API::load_configures()
-{
-  if (!SPIFFS.begin(false))
-    return;
-
-  File config_file = SPIFFS.open(WIFI_CONFIG_PATH);
-  if (!config_file)
-  {
-    Serial.println("[Wifi]: fail on load configure file");
-    return;
-  }
-
-  wifi_configure.auth_protocol = config_file.readStringUntil(';').toInt();
-  wifi_configure.ssid = config_file.readStringUntil(';');
-  if (wifi_configure.auth_protocol == WIFI_PEAP)
-    wifi_configure.username = config_file.readStringUntil(';');
-  wifi_configure.password = config_file.readStringUntil(EOF);
-  config_file.close();
-
-  config_file = SPIFFS.open(BROKER_CONFIG_PATH);
-  if (!config_file)
-  {
-    Serial.println("[Broker]: Failed to open configuration file");
-    return;
-  }
-
-  client_config.server_address = config_file.readStringUntil(';').c_str();
-  client_config.port = static_cast<uint16_t>(
-      config_file.readStringUntil(';').toInt());
-  client_config.username = config_file.readStringUntil(';').c_str();
-  client_config.password = config_file.readStringUntil(EOF).c_str();
-  config_file.close();
-
-  config_file = SPIFFS.open("/configs/env/id");
-  client_id = config_file.readString().c_str();
-
-  Serial.println("[SSL]: geting ssl_ca_cert");
-  config_file = SPIFFS.open("/configs/env/ca_certificate.pem");
-  static String ca_cert = config_file.readString();
-  // wifi_client.setCACert(ca_cert.c_str());
-  config_file.close();
-
-  config_file = SPIFFS.open("/configs/env/certificate.pem");
-  static String cert = config_file.readString();
-  // wifi_client.setCertificate(cert.c_str());
-  config_file.close();
-
-  config_file = SPIFFS.open("/configs/env/key.pem");
-  static String key = config_file.readString();
-  // wifi_client.setPrivateKey(key.c_str());
-  config_file.close();
-
-  // String Certificate = getFileContent("/configs/env/certificate.pem");
-  // wifi_client.setCertificate(Certificate.c_str());
-
-  // String PrivateKey = getFileContent("/configs/env/key.pem");
-  // wifi_client.setPrivateKey(PrivateKey.c_str());
-
-  loaded = true;
-}
-
 void API::reconnect()
 {
   Serial.println("In reconnect...");
   for (int i = 0; !is_client_connected() and i < 5; i++)
   {
     Serial.print("Attempting MQTT reconnection...");
-    // wifi_client.setInsecure();
     // Attempt to connect
-    if (mqtt_client.connect(client_id,
-                            client_config.username.c_str(), client_config.password.c_str()))
+    if (mqtt_client.connect(env->client_id.c_str(),
+                            env->broker.username.c_str(),
+                            env->broker.password.c_str()))
     {
       Serial.println("connected");
-      mqtt_client.subscribe(client_id);
+      mqtt_client.subscribe(env->client_id.c_str());
     }
     else
     {

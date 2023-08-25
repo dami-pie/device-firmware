@@ -1,16 +1,15 @@
 #include <Arduino.h>
 
 #include "screen.h"
-#include "api/api.h"
-#include "otp/otp.h"
+#include "api.h"
+#include "otp.h"
 #include "RFID.h"
-
-#define DOOR_PIN 4
-#define BUZZER_PIN 2
+#include "config.h"
 
 TaskHandle_t ui_wacher;
 volatile bool reconnecting = false;
 volatile bool connected = false;
+dami_config_t dami;
 
 void ui_watch(void *args)
 {
@@ -21,7 +20,7 @@ void ui_watch(void *args)
       show_layout(LV_SYMBOL_WIFI "\tConectado", GREEN_COLOR);
       getUpdate();
       codeUpdate(
-          otp.getCode(
+          otp->getCode(
               mktime(&timeInfo)));
     }
     else if (reconnecting)
@@ -37,8 +36,8 @@ void action()
   String tagId;
   if (Tag.getTagID(tagId))
     mqtt_client.publish("card", tagId.c_str());
-  else
-    Serial.println("Erro on read NFC tag...");
+  // else
+  // Serial.println("Erro on read NFC tag...");
 }
 
 void setup(void)
@@ -47,13 +46,15 @@ void setup(void)
   Serial.begin(115200); /* prepare for possible serial debug */
   Serial.setDebugOutput(true);
   Serial.println();
+  load_env(dami.environ);
+  delay(3000);
   setup_screen();
   show_layout(LV_SYMBOL_REFRESH "\tConectando", BROWN_COLOR);
   codeUpdate("wating...");
-  client.begin(trigger, action);
+  client.begin(trigger, action, dami.environ);
   delay(lv_timer_handler());
-  xTaskCreate(ui_watch, "ui", 10000, NULL, 2, &ui_wacher);
-  Tag.begin();
+  xTaskCreate(ui_watch, "ui", 3200, NULL, 2, &ui_wacher);
+  // Tag.begin();
 }
 
 void loop()
@@ -73,5 +74,5 @@ void loop()
     connected = false;
     reconnecting = false;
   }
-  client.loop();
+  // client.loop();
 }

@@ -12,22 +12,21 @@
 
 #define API_TRIGGER_T std::function<bool()> trigger
 #define API_CALLBACK_T std::function<void()> trigger_callback
-
-extern const char *client_id;
 class API
 {
 private:
   API_TRIGGER_T;
   API_CALLBACK_T;
+  env_t *env;
+
   bool loaded = false;
   bool connected = false;
   void start_connection();
-  void load_configures();
   void reconnect();
 
 public:
   void loop();
-  void begin(API_TRIGGER_T, API_CALLBACK_T);
+  void begin(API_TRIGGER_T, API_CALLBACK_T, env_t &env);
   void setTrigger(API_TRIGGER_T);
   void setCallback(API_CALLBACK_T);
 };

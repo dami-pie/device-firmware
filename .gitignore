@@ -5,7 +5,7 @@
 .vscode/launch.json
 .vscode/ipch
 secret.h
-data/configs/env/*
+data/**/env/*
 certs/*
 **/__pycache__/*
 logs/*

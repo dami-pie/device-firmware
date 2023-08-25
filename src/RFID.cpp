@@ -2,7 +2,7 @@
 
 TwoWire i2cBus = TwoWire(0);
 
-byte getAddress()
+byte getAddress(byte SDA, byte SCL)
 {
   byte error;
   i2cBus.begin(SDA_PIN, SCL_PIN);
@@ -44,10 +44,13 @@ volatile bool is_nfc_card_present = false;
 //   this->set_callback(cb);
 // }
 
-void NFCTag::begin()
+void NFCTag::begin(rfid_config_t &config)
 {
+  config.address = getAddress(
+      config.sda_pin,
+      config.scl_pin);
 
-  mfrc522 = MFRC522(new MFRC522_I2C(RST_PIN, getAddress(), i2cBus));
+  mfrc522 = MFRC522(new MFRC522_I2C(RST_PIN, config.address, i2cBus));
 
   is_nfc_card_present = false;
 
@@ -59,14 +62,14 @@ void NFCTag::begin()
   // pinMode(IRQ_PIN, INPUT_PULLUP);
   // attachInterrupt(IRQ_PIN, handle_card_isr, RISING);
   // attachInterrupt(IRQ_PIN, handle_card_isr, FALLING);
-  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+  // Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 }
 
 // void NFCTag::loop()
 // {
 //   if (mfrc522.PICC_IsNewCardPresent())
 //   {
-//     Serial.println("[NFC]: Card detected...");
+//     // Serial.println("[NFC]: Card detected...");
 //     this->nfc_callback();
 //     mfrc522.PCD_WriteRegister(MFRC522::ComIrqReg, 0x80); // Clear interrupts
 //     is_nfc_card_present = false;
@@ -89,13 +92,13 @@ String NFCTag::read_nfc()
   // Select one of the cards
   if (!mfrc522.PICC_ReadCardSerial())
   {
-    Serial.println(F("Bad read (was card removed too quickly?)"));
+    // Serial.println(F("Bad read (was card removed too quickly?)"));
     return "";
   }
 
   if (mfrc522.uid.size == 0)
   {
-    Serial.println(F("Bad card (size = 0)"));
+    // Serial.println(F("Bad card (size = 0)"));
     // disengage with the card.
     //
     mfrc522.PICC_HaltA();

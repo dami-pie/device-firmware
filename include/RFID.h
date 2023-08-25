@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "MFRC522.h"
+#include "config_types.h"
 #include "utils.h"
 extern TwoWire i2cBus;
 extern MFRC522 mfrc522;
@@ -21,7 +22,7 @@ private:
 
 public:
   // void begin(void (*cb)());
-  void begin();
+  void begin(rfid_config_t &config);
   // void loop();
   // void set_callback(void (*cb)());
   String read_nfc();
