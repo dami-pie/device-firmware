@@ -125,8 +125,22 @@ void API::load_configures()
 
   config_file = SPIFFS.open("/configs/env/id");
   client_id = config_file.readString().c_str();
-  // String CACert = getFileContent("/configs/env/ca_certificate.pem");
-  // wifi_client.setCACert(CACert.c_str());
+
+  Serial.println("[SSL]: geting ssl_ca_cert");
+  config_file = SPIFFS.open("/configs/env/ca_certificate.pem");
+  static String ca_cert = config_file.readString();
+  // wifi_client.setCACert(ca_cert.c_str());
+  config_file.close();
+
+  config_file = SPIFFS.open("/configs/env/certificate.pem");
+  static String cert = config_file.readString();
+  // wifi_client.setCertificate(cert.c_str());
+  config_file.close();
+
+  config_file = SPIFFS.open("/configs/env/key.pem");
+  static String key = config_file.readString();
+  // wifi_client.setPrivateKey(key.c_str());
+  config_file.close();
 
   // String Certificate = getFileContent("/configs/env/certificate.pem");
   // wifi_client.setCertificate(Certificate.c_str());

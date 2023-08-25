@@ -1,28 +1,42 @@
 #include "RFID.h"
 
-MFRC522 mfrc522(new MFRC522_I2C(RST_PIN));
+TwoWire i2cBus = TwoWire(0);
+
+byte getAddress()
+{
+  byte error;
+  i2cBus.begin(SDA_PIN, SCL_PIN);
+  for (byte address = 1; address < 127; address++)
+  {
+    i2cBus.beginTransmission(address);
+    if (i2cBus.endTransmission() == 0)
+      return address;
+  }
+}
+
+MFRC522 mfrc522;
 
 volatile bool is_nfc_card_present = false;
 
-void IRAM_ATTR handle_card_isr()
-{
-  is_nfc_card_present = true;
-}
+// void IRAM_ATTR handle_card_isr()
+// {
+//   is_nfc_card_present = true;
+// }
 
-bool load_pin_config(const char *path, byte &pin)
-{
-  File file = SPIFFS.open(path);
-  if (file)
-  {
-    pin = static_cast<byte>(
-        file.readStringUntil(EOF).toInt());
+// bool load_pin_config(const char *path, byte &pin)
+// {
+//   File file = SPIFFS.open(path);
+//   if (file)
+//   {
+//     pin = static_cast<byte>(
+//         file.readStringUntil(EOF).toInt());
 
-    return true;
-  }
+//     return true;
+//   }
 
-  else
-    return false;
-}
+//   else
+//     return false;
+// }
 
 // void NFCTag::begin(void (*cb)())
 // {
@@ -33,8 +47,10 @@ bool load_pin_config(const char *path, byte &pin)
 void NFCTag::begin()
 {
 
+  mfrc522 = MFRC522(new MFRC522_I2C(RST_PIN, getAddress(), i2cBus));
+
   is_nfc_card_present = false;
-  Wire.begin(5, 4, 400000);
+
   mfrc522.PCD_Init();                                  // Init MFRC522
   mfrc522.PCD_DumpVersionToSerial();                   // Show details of PCD - MFRC522 Card Reader details
   mfrc522.PCD_WriteRegister(MFRC522::ComIrqReg, 0x80); // Clear interrupts
@@ -87,13 +103,15 @@ String NFCTag::read_nfc()
   }
   else
   {
-    char tag[sizeof(mfrc522.uid.uidByte) * 4] = {0};
-    for (int i = 0; i < mfrc522.uid.size; i++)
+    String tag = "";
+    for (byte i = 0; i < mfrc522.uid.size;)
     {
-      char buff[5]; // 3 digits, dash and \0.
-      snprintf(buff, sizeof(buff), "%s%d", i ? "-" : "", mfrc522.uid.uidByte[i]);
-      strncat(tag, buff, sizeof(tag));
-    };
+      char buff[3];
+      snprintf(buff, sizeof(buff), "%02x", mfrc522.uid.uidByte[i]);
+      tag += buff;
+      if (++i < mfrc522.uid.size)
+        tag += ":";
+    }
     Serial.println(F("Good scan: "));
     Serial.println(tag);
     mfrc522.PICC_HaltA();
@@ -116,12 +134,14 @@ bool NFCTag::getTagID(String &tag)
     return false;
   }
   else
-    for (int i = 0; i < mfrc522.uid.size; i++)
+    for (byte i = 0; i < mfrc522.uid.size;)
     {
-      char buff[5]; // 3 digits, dash and \0.
-      snprintf(buff, sizeof(buff), "%s%d", i ? "-" : "", mfrc522.uid.uidByte[i]);
+      char buff[3];
+      snprintf(buff, sizeof(buff), "%02x", mfrc522.uid.uidByte[i]);
       tag += buff;
-    };
+      if (++i < mfrc522.uid.size)
+        tag += ":";
+    }
 
   mfrc522.PICC_HaltA();
   return true;

@@ -4,14 +4,16 @@
 #include <Arduino.h>
 #include "MFRC522.h"
 #include "utils.h"
-
-extern MFRC522_I2C *i2c_connection;
+extern TwoWire i2cBus;
 extern MFRC522 mfrc522;
 extern volatile bool is_nfc_card_present;
 
-#define MFRC522_I2C_DEFAULT_ADDR 0x3C
+// #define MFRC522_I2C_DEFAULT_ADDR 0x28
 #define IRQ_PIN 34 // Configurable, see typical pin layout above
 #define RST_PIN 33 // Configurable, see typical pin layout above
+#define SCL_PIN 4  // Configurable, see typical pin layout above
+#define SDA_PIN 2  // Configurable, see typical pin layout above
+
 class NFCTag
 {
 private:
