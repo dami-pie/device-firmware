@@ -8,7 +8,7 @@
 
 TaskHandle_t ui_wacher;
 dami_config_t dami;
-TwoWire i2cBus(0);
+TwoWire i2cBus(1);
 MFRC522 mfrc522;
 TOTP *otp;
 volatile bool reconnecting = false;
@@ -16,20 +16,22 @@ volatile bool connected = false;
 
 void ui_watch(void *args)
 {
-
-  for (String base_url = "https://https://apiseg.poli.br?id=" + dami.environ.client_id + "&otp=";;
-       delay(lv_timer_handler()))
+  // String base_url = "https://appseg.poli.br?id=" + dami.environ.client_id + "&otp=";
+  while (true)
   {
     if (connected)
     {
       show_layout(LV_SYMBOL_WIFI "\tConectado", GREEN_COLOR);
-      getUpdate();
-      codeUpdate(base_url + otp->getCode(mktime(&timeInfo)));
+      // codeUpdate(base_url + otp->getCode(mktime(&timeInfo)));
     }
     else if (reconnecting)
       show_layout(LV_SYMBOL_REFRESH "\tConectando", BROWN_COLOR);
     else
       show_layout(LV_SYMBOL_CLOSE "\tDesconectado", RED_COLOR);
+    delay(2000);
+    auto data = timeUpdate();
+    lv_label_set_text(ui_TimeLabel, std::get<0>(data).c_str());
+    lv_label_set_text(ui_DateLabel, std::get<1>(data).c_str());
   }
 }
 
@@ -44,32 +46,33 @@ void setup(void)
   Serial.println();
   load_env(dami.environ);
   delay(2000);
+  // client.begin(trigger, action, dami);
   setup_screen();
   show_layout(LV_SYMBOL_REFRESH "\tConectando", BROWN_COLOR);
-  codeUpdate("https://https://apiseg.poli.br/");
+  codeUpdate("https://appseg.poli.br/");
+  getUpdate();
   delay(lv_timer_handler());
-  client.begin(trigger, action, dami);
-  otp = new TOTP(dami.environ.otp.secret, dami.environ.otp.size, 60);
-  load_config(dami);
+  // otp = new TOTP(dami.environ.otp.secret, dami.environ.otp.size, 60);
+  //  load_config(dami);
   delay(2000);
 
-  i2cBus.begin(dami.rfid.sda_pin, dami.rfid.scl_pin);
-  for (dami.rfid.address = 1; dami.rfid.address < 127; dami.rfid.address++)
-  {
-    i2cBus.beginTransmission(dami.rfid.address);
-    if (i2cBus.endTransmission() == 0)
-    {
-      break;
-    }
-  }
-  Serial.printf("i2c address setup at 0x%02X", dami.rfid.address);
+  // i2cBus.begin(dami.rfid.sda_pin, dami.rfid.scl_pin);
+  // for (dami.rfid.address = 1; dami.rfid.address < 127; dami.rfid.address++)
+  // {
+  //   i2cBus.beginTransmission(dami.rfid.address);
+  //   if (i2cBus.endTransmission() == 0)
+  //   {
+  //     break;
+  //   }
+  // }
+  // Serial.printf("i2c address setup at 0x%02X", dami.rfid.address);
 
-  mfrc522 = MFRC522(new MFRC522_I2C(33, dami.rfid.address, i2cBus));
-  mfrc522.PCD_Init();                                  // Init MFRC522
-  mfrc522.PCD_DumpVersionToSerial();                   // Show details of PCD - MFRC522 Card Reader details
-  mfrc522.PCD_WriteRegister(MFRC522::ComIrqReg, 0x80); // Clear interrupts
+  // mfrc522 = MFRC522(new MFRC522_I2C(33, dami.rfid.address, i2cBus));
+  // mfrc522.PCD_Init();                                  // Init MFRC522
+  // mfrc522.PCD_DumpVersionToSerial();                   // Show details of PCD - MFRC522 Card Reader details
+  // mfrc522.PCD_WriteRegister(MFRC522::ComIrqReg, 0x80); // Clear interrupts
 
-  xTaskCreate(ui_watch, "ui", 3200, NULL, 2, &ui_wacher);
+  xTaskCreate(ui_watch, "ui", 10000, NULL, 1, &ui_wacher);
 }
 
 void loop()
@@ -89,10 +92,11 @@ void loop()
     connected = false;
     reconnecting = false;
   }
-  client.loop();
+  // client.loop();
 }
 
-bool trigger() { return mfrc522.PICC_IsNewCardPresent(); }
+// bool trigger() { return mfrc522.PICC_IsNewCardPresent(); }
+bool trigger() { return false; }
 const char *action(String *topic)
 {
 

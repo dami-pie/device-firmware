@@ -19,18 +19,11 @@ void codeUpdate(String code)
   lv_qrcode_update(ui_QRCodeLogin, code.c_str(), code.length());
 }
 
-void getUpdate(std::tuple<String, String> *_data)
+void getUpdate()
 {
   auto data = timeUpdate();
   lv_label_set_text(ui_TimeLabel, std::get<0>(data).c_str());
   lv_label_set_text(ui_DateLabel, std::get<1>(data).c_str());
-  if (_data != nullptr)
-    *_data = data;
-}
-
-void getUpdate()
-{
-  getUpdate(nullptr);
 }
 
 void setup_screen()
