@@ -140,7 +140,7 @@ def main():
                               f'Select a fileld to edit: \n{device_config}', indicator='>')[0]
             edit_dict[edit_field] = ""
 
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(argv[0])), '..', '..', 'data/configs/env')
+    default_dir = os.path.join(os.path.dirname(os.path.abspath(argv[0])), '..', 'data/configs/env')
     dump_config_path = os.getenv('DIST_PATH', default=default_dir)
     if not os.path.exists(dump_config_path):
         print('Creating env folder:')

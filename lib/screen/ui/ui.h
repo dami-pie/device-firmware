@@ -24,8 +24,8 @@ extern "C"
 #endif
 
   extern lv_obj_t *ui_LoginScreen;
-  // extern lv_obj_t *ui_EcompLogo;
-  // extern lv_obj_t *ui_LoginLabel;
+  extern lv_obj_t *ui_EcompLogo;
+  extern lv_obj_t *ui_LoginLabel;
   extern lv_obj_t *ui_QRCodeLogin;
   extern lv_obj_t *ui_WifiPanel;
   extern lv_obj_t *ui_WifiLabel;

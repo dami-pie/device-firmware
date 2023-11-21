@@ -28,25 +28,25 @@ bool is_client_connected()
 
 bool setup_wifi()
 {
-  // if (wifi_configure.auth_protocol == WIFI_PEAP)
-  //{
-  // esp_wifi_sta_wpa2_ent_set_username(user, sizeof(user));
-  // esp_wifi_sta_wpa2_ent_set_password(pass, sizeof(pass));
-  // esp_wifi_sta_wpa2_ent_enable();
-  // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
-  // WiFi.begin(
-  //    wifi_configure.ssid,
-  //    WPA2_AUTH_PEAP,
-  //    NULL,
-  //    wifi_configure.username,
-  //    wifi_configure.password);
-  //}
-  // else
-  //{
-  WiFi.begin(
-      wifi_configure.ssid,
-      wifi_configure.password);
-  //}
+  if (wifi_configure.auth_protocol == WIFI_PEAP)
+  {
+    // esp_wifi_sta_wpa2_ent_set_username(user, sizeof(user));
+    // esp_wifi_sta_wpa2_ent_set_password(pass, sizeof(pass));
+    // esp_wifi_sta_wpa2_ent_enable();
+    // esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+    WiFi.begin(
+        wifi_configure.ssid,
+        WPA2_AUTH_PEAP,
+        (const char *)NULL,
+        wifi_configure.username,
+        wifi_configure.password.c_str());
+  }
+  else
+  {
+    WiFi.begin(
+        wifi_configure.ssid,
+        wifi_configure.password);
+  }
   Serial.print("[WiFi]: Connecting to ");
   Serial.println(wifi_configure.ssid);
 

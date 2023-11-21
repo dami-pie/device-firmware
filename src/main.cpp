@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 #include "screen.h"
-#include "api/api.h"
-#include "otp/otp.h"
+#include "api.h"
+#include "otp.h"
 #include "RFID.h"
 
 #define DOOR_PIN 4

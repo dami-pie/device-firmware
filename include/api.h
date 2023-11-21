@@ -1,7 +1,7 @@
 #ifndef __api_action_h__
 #define __api_action_h__
 
-#include "connection/connection.h"
+#include "connection.h"
 
 #define NEW_CARD_TOPIC "new_card"
 #define CARD_AUTH_TOPIC "card"

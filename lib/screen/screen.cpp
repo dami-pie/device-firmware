@@ -60,7 +60,7 @@ void setup_screen()
    5. LVGL : Setup & Initialize the input device driver
    ----------------------------------------------------*/
   lv_init();
-  lv_disp_draw_buf_init(&draw_buf, buf, nullptr, screenWidth * 10);
+  lv_disp_draw_buf_init(&draw_buf, buf, buf2, screenWidth * 10);
 
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
